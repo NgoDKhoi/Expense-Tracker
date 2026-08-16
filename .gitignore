@@ -5,3 +5,8 @@ build/
 local.properties
 */build/
 */*/build/
+
+# Internal AI context files
+AI_RULES.md
+plan.md
+PROJECT_CONTEXT.md
