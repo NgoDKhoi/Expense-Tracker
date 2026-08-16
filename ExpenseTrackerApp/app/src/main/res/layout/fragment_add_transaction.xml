@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_dark">
+
+    <androidx.camera.view.PreviewView
+        android:id="@+id/camera_preview"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+        
+    <ImageView
+        android:id="@+id/iv_captured_image"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
+
+    <!-- Top Overlay (Header) -->
+    <LinearLayout
+        android:id="@+id/ll_top_header"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="16dp"
+        android:layout_marginTop="32dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageButton
+            android:id="@+id/btn_settings"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_preferences"
+            app:tint="@color/white" />
+
+        <TextView
+            android:id="@+id/tv_wallet_balance_header"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="$0.00"
+            android:textAlignment="center"
+            android:textColor="@color/white"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:drawableEnd="@android:drawable/arrow_down_float"
+            android:drawablePadding="4dp"
+            app:drawableTint="@color/white"/>
+
+        <ImageButton
+            android:id="@+id/btn_ai_chat"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_chat"
+            app:tint="@color/white" />
+    </LinearLayout>
+
+    <!-- Bottom Capture Overlay (Locket style) -->
+    <LinearLayout
+        android:id="@+id/ll_capture_actions"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="32dp"
+        android:layout_marginBottom="32dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageButton
+            android:id="@+id/btn_flash"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_flash"
+            app:tint="@color/white" />
+
+        <!-- Big Orange Capture Button -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btn_capture"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            app:fabCustomSize="80dp"
+            app:maxImageSize="48dp"
+            app:tint="@color/white"
+            app:backgroundTint="@color/colorAccent"
+            android:src="@android:drawable/ic_menu_camera"
+            app:elevation="8dp" />
+
+        <ImageButton
+            android:id="@+id/btn_flip_camera"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_popup_sync"
+            app:tint="@color/white" />
+    </LinearLayout>
+
+    <!-- Input Form Overlay (Hidden by default, shown after capture) -->
+    <LinearLayout
+        android:id="@+id/ll_input_form"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#DD000000"
+        android:padding="24dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <EditText
+            android:id="@+id/et_amount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Amount"
+            android:textColorHint="@color/text_hint"
+            android:textColor="@color/white"
+            android:textSize="40sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:inputType="numberDecimal"
+            android:maxLines="1"
+            android:singleLine="true"
+            android:imeOptions="actionNext"
+            android:background="@null"
+            android:layout_marginBottom="16dp"/>
+            
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggle_transaction_type"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp"
+            app:singleSelection="true"
+            app:checkedButton="@+id/btn_type_expense">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_type_expense"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="EXPENSE"
+                style="?attr/materialButtonOutlinedStyle"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_type_income"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="INCOME"
+                style="?attr/materialButtonOutlinedStyle"/>
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:layout_marginBottom="24dp">
+            <LinearLayout
+                android:id="@+id/ll_categories"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <!-- Reusing old category buttons for now -->
+                <Button android:id="@+id/btn_cat_food" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/cat_food" android:backgroundTint="@color/category_food" android:textColor="@color/white" android:layout_marginEnd="8dp" />
+                <Button android:id="@+id/btn_cat_transport" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/cat_transport" android:backgroundTint="@color/category_transport" android:textColor="@color/white" android:layout_marginEnd="8dp" />
+                <Button android:id="@+id/btn_cat_utilities" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/cat_utilities" android:backgroundTint="@color/category_utilities" android:textColor="@color/white" android:layout_marginEnd="8dp" />
+                <Button android:id="@+id/btn_cat_shopping" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/cat_shopping" android:backgroundTint="@color/category_shopping" android:textColor="@color/white" android:layout_marginEnd="8dp" />
+                <Button android:id="@+id/btn_cat_other" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/cat_other" android:backgroundTint="@color/category_other" android:textColor="@color/white" />
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+            
+            <ImageButton
+                android:id="@+id/btn_retake"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_marginEnd="16dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_revert"
+                app:tint="@color/white" />
+                
+            <Button
+                android:id="@+id/btn_save"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="56dp"
+                android:text="SAVE"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:backgroundTint="@color/colorAccent"
+                android:textColor="@color/white"
+                app:cornerRadius="28dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Expense Tracker</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_add">Add</string>
+    <string name="nav_history">History</string>
+    <string name="nav_ai">AI Assistant</string>
+    <string name="hint_amount">Enter amount</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_capture">Capture</string>
+    <string name="title_home">Dashboard</string>
+    <string name="title_history">Expense History</string>
+    <string name="title_ai">AI Assistant</string>
+    <string name="label_total_month">This Month</string>
+    <string name="label_no_expenses">No expenses yet</string>
+    <string name="label_category">Category</string>
+    
+    <string name="cat_food">Food</string>
+    <string name="cat_transport">Transport</string>
+    <string name="cat_utilities">Utilities</string>
+    <string name="cat_shopping">Shopping</string>
+    <string name="cat_other">Other</string>
+    
+    <string name="desc_add_new_expense">Add new expense</string>
+</resources>
