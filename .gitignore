@@ -7,6 +7,11 @@ local.properties
 */*/build/
 
 # Internal AI context files
-AI_RULES.md
-plan.md
-PROJECT_CONTEXT.md
+.agents/rules/plan.md
+.agents/rules/project_context.md
+
+# Presentation materials (not to be pushed)
+ThuyetTrinh/
+
+# Documentation
+docs/
