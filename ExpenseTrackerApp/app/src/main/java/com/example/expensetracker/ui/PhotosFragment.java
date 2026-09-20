@@ -38,7 +38,21 @@ public class PhotosFragment extends Fragment {
         RecyclerView rvPhotos = view.findViewById(R.id.rv_photos);
         rvPhotos.setLayoutManager(new GridLayoutManager(getContext(), 3));
         
-        adapter = new PhotoAdapter(requireContext(), new ArrayList<>());
+        adapter = new PhotoAdapter(requireContext(), new ArrayList<>(), expense -> {
+            long time = expense.getTimestamp() != null ? expense.getTimestamp().getTime() : System.currentTimeMillis();
+            ReceiptDetailFragment detailFragment = ReceiptDetailFragment.newInstance(
+                    expense.getAmount(),
+                    expense.getCategory(),
+                    expense.getImageUri(),
+                    time,
+                    expense.getNote()
+            );
+
+            requireActivity().getSupportFragmentManager().beginTransaction()
+                    .add(android.R.id.content, detailFragment)
+                    .addToBackStack(null)
+                    .commit();
+        });
         rvPhotos.setAdapter(adapter);
 
         getAllTransactionsUseCase.execute().observe(getViewLifecycleOwner(), expenses -> {

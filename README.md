@@ -6,9 +6,31 @@ Expense Tracker là một ứng dụng di động native Android giúp người 
 
 ## 🌟 Các tính năng chính (Core Features)
 
-- **Ghi nhận chi tiêu bằng Camera (Expense Logging with Camera)**: Chụp ảnh hóa đơn hoặc vật phẩm đã mua ngay tức thì thông qua CameraX, kết hợp với form nhập số tiền (Amount) và danh mục (Category) nhanh gọn. Khởi động camera không có độ trễ (zero-lag).
-- **Đồng bộ hóa ngoại tuyến (Deferred/Offline Sync)**: Ứng dụng hoạt động theo cơ chế Offline-first. Dữ liệu (ảnh và text) được lưu an toàn vào Local Database khi thiết bị offline và sẽ tự động đồng bộ (sync) với server thông qua các Background Tasks khi có kết nối internet.
-- **Trợ lý ngân sách AI (AI Budgeting Assistant)**: Tích hợp API AI (ví dụ: Gemini) để phân tích thói quen chi tiêu dựa trên lịch sử giao dịch và cung cấp các lời khuyên tài chính cá nhân hóa.
+Dựa trên thiết kế UI/UX theo phong cách Locket (chụp nhanh - vuốt mượt) và kiến trúc Offline-first, ứng dụng cung cấp các tính năng nổi bật sau:
+
+1. **Trải nghiệm Camera-First (Locket-style Capture)**
+   - Màn hình chính của ứng dụng ngay lập tức mở Camera (không độ trễ) bằng CameraX.
+   - Quy trình ghi nhận siêu tốc: Chụp hóa đơn/sản phẩm ➔ Nhập số tiền ➔ Lưu. Form tự động reset sẵn sàng cho lần chụp tiếp theo.
+
+2. **Điều hướng thông minh bằng cử chỉ (Smart Swipe Navigation)**
+   - **Vuốt ngang (Horizontal Swipe):** Chuyển đổi nhanh chóng giữa 3 luồng chính: Dashboard (Quản lý) ➔ Camera (Chụp ảnh) ➔ Photos (Lịch sử hóa đơn).
+   - **Vuốt dọc (Vertical Swipe):** Trải nghiệm xem lại hóa đơn theo phong cách TikTok/Reels - vuốt lên/xuống để xem chi tiết từng giao dịch với hình ảnh full màn hình.
+
+3. **Quản lý tài chính đa dạng (Dashboard & Wallets)**
+   - Tóm tắt chi tiêu trực quan bằng biểu đồ (PieChart).
+   - Quản lý đa ví (Wallets) để theo dõi ngân sách theo từng nguồn tiền.
+   - Xem lịch sử giao dịch (Ledger) theo dạng cộng/trừ chi tiết như app ngân hàng.
+
+4. **Đồng bộ hóa ngoại tuyến (Offline-first & Deferred Sync)**
+   - Hoạt động mượt mà không cần mạng. Mọi giao dịch được lưu ngay lập tức vào Local Database (Room).
+   - Cơ chế đồng bộ ngầm thông minh: Tự động phát hiện khi có mạng (Internet) để đẩy dữ liệu đã lưu tạm lên Server thông qua Background Service.
+
+5. **Trợ lý Ngân sách AI (AI Assistant - Gemini API)**
+   - Hoạt động dưới dạng Chat icon hoặc Floating Bubble.
+   - Trợ lý AI tự động phân tích dữ liệu chi tiêu trong tháng (tổng hợp thành file JSON) và đưa ra những lời khuyên tài chính cá nhân hóa.
+
+6. **Kho lưu trữ Hóa đơn trực quan (Receipt Grid)**
+   - Toàn bộ chi tiêu được hiển thị dưới dạng lưới hình ảnh trực quan, giúp người dùng dễ dàng nhớ lại khoản tiền đó đã dùng vào việc gì thay vì chỉ đọc các con số khô khan.
 
 ## 🛠 Công nghệ sử dụng (Technology Stack)
 

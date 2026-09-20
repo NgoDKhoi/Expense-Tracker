@@ -23,10 +23,16 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
 
     private List<TransactionModel> expenses;
     private Context context;
+    private OnPhotoClickListener listener;
 
-    public PhotoAdapter(Context context, List<TransactionModel> expenses) {
+    public interface OnPhotoClickListener {
+        void onPhotoClick(TransactionModel expense);
+    }
+
+    public PhotoAdapter(Context context, List<TransactionModel> expenses, OnPhotoClickListener listener) {
         this.context = context;
         this.expenses = expenses;
+        this.listener = listener;
     }
 
     public void setExpenses(List<TransactionModel> expenses) {
@@ -57,7 +63,7 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
                     .into(holder.ivPhoto);
         }
 
-        holder.itemView.setOnClickListener(v -> showDetailsDialog(expense));
+        holder.itemView.setOnClickListener(v -> listener.onPhotoClick(expense));
     }
 
     @Override
@@ -65,23 +71,6 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
         return expenses.size();
     }
 
-    private void showDetailsDialog(TransactionModel expense) {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-        String dateStr = sdf.format(expense.getTimestamp());
-
-        String details = "Title: " + expense.getTitle() + "\n" +
-                "Amount: $" + String.format(Locale.getDefault(), "%.2f", expense.getAmount()) + "\n" +
-                "Type: " + expense.getType() + "\n" +
-                "Category: " + expense.getCategory() + "\n" +
-                "Date: " + dateStr + "\n" +
-                "Note: " + (expense.getNote() != null ? expense.getNote() : "N/A");
-
-        new AlertDialog.Builder(context)
-                .setTitle("Transaction Details")
-                .setMessage(details)
-                .setPositiveButton("Close", null)
-                .show();
-    }
 
     static class PhotoViewHolder extends RecyclerView.ViewHolder {
         ImageView ivPhoto;

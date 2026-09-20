@@ -68,6 +68,16 @@ public class ReceiptDetailFragment extends Fragment {
         TextView tvAmount = view.findViewById(R.id.tv_amount);
         TextView tvDate = view.findViewById(R.id.tv_date);
         TextView tvNote = view.findViewById(R.id.tv_note);
+        android.widget.ImageButton btnReturn = view.findViewById(R.id.btn_return);
+
+        btnReturn.setOnClickListener(v -> {
+            androidx.fragment.app.Fragment parent = getParentFragment();
+            if (parent instanceof CameraHostFragment) {
+                ((CameraHostFragment) parent).returnToCamera();
+            } else {
+                requireActivity().getSupportFragmentManager().popBackStack();
+            }
+        });
 
         if (imageUri != null && !imageUri.isEmpty()) {
             ivReceiptImage.setImageURI(Uri.parse(imageUri));

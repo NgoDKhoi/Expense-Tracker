@@ -197,7 +197,19 @@ public class AddTransactionFragment extends Fragment {
         btnCatOther.callOnClick();
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            startCamera();
+        }
+    }
+
     private void startCamera() {
+        if (ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.CAMERA) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            return; // Exit if permission is not granted
+        }
+
         ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext());
         
         cameraProviderFuture.addListener(() -> {

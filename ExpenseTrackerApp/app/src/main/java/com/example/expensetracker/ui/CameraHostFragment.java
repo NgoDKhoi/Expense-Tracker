@@ -52,6 +52,12 @@ public class CameraHostFragment extends Fragment {
         });
     }
 
+    public void returnToCamera() {
+        if (verticalViewPager != null) {
+            verticalViewPager.setCurrentItem(0, true);
+        }
+    }
+
     private static class CameraPagerAdapter extends FragmentStateAdapter {
 
         private List<TransactionModel> expenses = new ArrayList<>();
