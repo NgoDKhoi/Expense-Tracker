@@ -6,11 +6,19 @@ local.properties
 */build/
 */*/build/
 
-# Internal AI context files
-.agents/rules/plan.md
-.agents/rules/project_context.md
+# AI Agent configuration (contains personal paths & internal context)
+.agents/
 
-# Presentation materials (not to be pushed)
+# AI IDE artifacts
+.artifacts/
+
+# Debug dumps
+window_dump*.xml
+
+# Screenshots & images (use GitHub Releases for assets)
+*.png
+
+# Presentation materials
 ThuyetTrinh/
 
 # Documentation
