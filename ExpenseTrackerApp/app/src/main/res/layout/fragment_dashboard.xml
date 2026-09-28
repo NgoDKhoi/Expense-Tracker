@@ -9,7 +9,21 @@
         android:id="@+id/dashboard_fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginBottom="?attr/actionBarSize" />
+        android:layout_marginBottom="?attr/actionBarSize" >
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_add_wallet"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="80dp"
+            android:contentDescription="Add Wallet"
+            android:src="@android:drawable/ic_input_add"
+            app:backgroundTint="@color/colorAccent"
+            app:elevation="4dp"
+            app:tint="@color/white" />
+    </FrameLayout>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/dashboard_bottom_nav"
@@ -20,18 +34,5 @@
         app:itemIconTint="@color/nav_item_color_state"
         app:itemTextColor="@color/nav_item_color_state"
         app:menu="@menu/dashboard_nav_menu" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_add_wallet"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="80dp" 
-        android:src="@android:drawable/ic_input_add"
-        app:backgroundTint="@color/colorAccent"
-        app:tint="@color/white"
-        app:elevation="4dp"
-        android:contentDescription="Add Wallet" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
