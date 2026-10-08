@@ -4,6 +4,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/background_dark"
+    android:clickable="true"
+    android:focusable="true"
     android:gravity="center"
     android:padding="16dp">
 

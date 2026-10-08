@@ -6,7 +6,7 @@
         android:title="Dashboard" />
     <item
         android:id="@+id/nav_wallets"
-        android:icon="@android:drawable/ic_menu_edit"
+        android:icon="@drawable/ic_wallet"
         android:title="Wallets" />
     <item
         android:id="@+id/nav_history"

@@ -1,9 +1,11 @@
 package com.example.expensetracker;
 
 import android.Manifest;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.widget.Toast;
+
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -16,8 +18,11 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
+
 import com.example.expensetracker.ui.CameraHostFragment;
 import com.example.expensetracker.ui.DashboardFragment;
+import com.example.expensetracker.ui.DepthPageTransformer;
+import com.example.expensetracker.ui.OnboardingDialogFragment;
 import com.example.expensetracker.ui.PhotosFragment;
 
 public class MainActivity extends AppCompatActivity {
@@ -30,10 +35,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
-        
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
             return insets;
         });
 
@@ -50,11 +55,16 @@ public class MainActivity extends AppCompatActivity {
         viewPager = findViewById(R.id.main_view_pager);
         MainPagerAdapter pagerAdapter = new MainPagerAdapter(this);
         viewPager.setAdapter(pagerAdapter);
-        
-        // Disable swipe if needed, or leave enabled. Currently enabled for horizontal swipe.
-        
-        // Start on Camera page (Index 1) - using post to ensure layout is ready
+        viewPager.setPageTransformer(new DepthPageTransformer());
+
+        // Start on Camera page (Index 1)
         viewPager.post(() -> viewPager.setCurrentItem(1, false));
+
+        // Check Onboarding
+        SharedPreferences prefs = getSharedPreferences(OnboardingDialogFragment.PREFS_NAME, MODE_PRIVATE);
+        if (prefs.getBoolean(OnboardingDialogFragment.KEY_FIRST_LAUNCH, true)) {
+            OnboardingDialogFragment.newInstance().show(getSupportFragmentManager(), "ONBOARDING");
+        }
     }
 
     private static class MainPagerAdapter extends FragmentStateAdapter {
@@ -68,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
         public Fragment createFragment(int position) {
             switch (position) {
                 case 0:
-                    return new DashboardFragment(); // Renamed from HomeFragment
+                    return new DashboardFragment();
                 case 1:
                     return new CameraHostFragment();
                 case 2:

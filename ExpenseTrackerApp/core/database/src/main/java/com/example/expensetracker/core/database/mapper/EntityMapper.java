@@ -1,10 +1,12 @@
 package com.example.expensetracker.core.database.mapper;
 
+import com.example.expensetracker.core.database.entity.CategoryEntity;
 import com.example.expensetracker.core.database.entity.CategoryTotal;
 import com.example.expensetracker.core.database.entity.TransactionEntity;
 import com.example.expensetracker.core.database.entity.SyncStatus;
 import com.example.expensetracker.core.database.entity.TransactionType;
 import com.example.expensetracker.core.database.entity.WalletEntity;
+import com.example.expensetracker.core.domain.model.CategoryModel;
 import com.example.expensetracker.core.domain.model.CategoryTotalModel;
 import com.example.expensetracker.core.domain.model.TransactionModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
@@ -64,6 +66,8 @@ public class EntityMapper {
         model.setId(entity.getId());
         model.setName(entity.getName());
         model.setBalance(entity.getBalance());
+        model.setColorHex(entity.getColorHex());
+        model.setIconName(entity.getIconName());
         return model;
     }
 
@@ -73,6 +77,8 @@ public class EntityMapper {
         entity.setId(model.getId());
         entity.setName(model.getName());
         entity.setBalance(model.getBalance());
+        entity.setColorHex(model.getColorHex());
+        entity.setIconName(model.getIconName());
         return entity;
     }
 
@@ -106,6 +112,37 @@ public class EntityMapper {
         if (entities == null) return null;
         List<CategoryTotalModel> models = new ArrayList<>();
         for (CategoryTotal entity : entities) {
+            models.add(toModel(entity));
+        }
+        return models;
+    }
+
+    public static CategoryModel toModel(CategoryEntity entity) {
+        if (entity == null) return null;
+        CategoryModel model = new CategoryModel();
+        model.setId(entity.getId());
+        model.setName(entity.getName());
+        model.setType(entity.getType());
+        model.setColorHex(entity.getColorHex());
+        model.setIconName(entity.getIconName());
+        return model;
+    }
+
+    public static CategoryEntity toEntity(CategoryModel model) {
+        if (model == null) return null;
+        CategoryEntity entity = new CategoryEntity();
+        entity.setId(model.getId());
+        entity.setName(model.getName());
+        entity.setType(model.getType());
+        entity.setColorHex(model.getColorHex());
+        entity.setIconName(model.getIconName());
+        return entity;
+    }
+
+    public static List<CategoryModel> toCategoryModelList(List<CategoryEntity> entities) {
+        if (entities == null) return null;
+        List<CategoryModel> models = new ArrayList<>();
+        for (CategoryEntity entity : entities) {
             models.add(toModel(entity));
         }
         return models;

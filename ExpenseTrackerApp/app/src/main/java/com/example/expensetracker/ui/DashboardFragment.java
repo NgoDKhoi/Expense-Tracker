@@ -50,10 +50,9 @@ public class DashboardFragment extends Fragment {
             if (itemId == R.id.nav_overview) {
                 selectedFragment = new DashboardOverviewFragment();
             } else if (itemId == R.id.nav_wallets) {
-                selectedFragment = new BudgetFragment();
+                selectedFragment = new WalletsFragment();
             } else if (itemId == R.id.nav_history) {
-                // TODO: Create Bank-style History Fragment later, using PhotosFragment temporarily or a placeholder
-                selectedFragment = new Fragment(); // Placeholder
+                selectedFragment = new HistoryFragment();
             } else if (itemId == R.id.nav_ai) {
                 selectedFragment = new AiAssistantFragment();
             }

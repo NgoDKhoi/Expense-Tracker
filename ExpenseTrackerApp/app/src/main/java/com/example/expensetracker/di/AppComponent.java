@@ -6,7 +6,7 @@ import com.example.expensetracker.core.database.di.DatabaseModule;
 import com.example.expensetracker.core.database.di.RepositoryModule;
 import com.example.expensetracker.ui.AddTransactionFragment;
 import com.example.expensetracker.ui.AiAssistantFragment;
-import com.example.expensetracker.ui.BudgetFragment;
+import com.example.expensetracker.ui.WalletsFragment;
 import com.example.expensetracker.ui.CameraHostFragment;
 import com.example.expensetracker.ui.DashboardFragment;
 import com.example.expensetracker.ui.DashboardOverviewFragment;
@@ -31,7 +31,7 @@ public interface AppComponent {
     // Fragments
     void inject(AddTransactionFragment fragment);
     void inject(AiAssistantFragment fragment);
-    void inject(BudgetFragment fragment);
+    void inject(WalletsFragment fragment);
     void inject(CameraHostFragment fragment);
     void inject(DashboardFragment fragment);
     void inject(DashboardOverviewFragment fragment);
@@ -39,4 +39,5 @@ public interface AppComponent {
     void inject(PhotosFragment fragment);
     void inject(ReceiptDetailFragment fragment);
     void inject(SettingsFragment fragment);
+    void inject(com.example.expensetracker.ui.TransactionFormFragment fragment);
 }

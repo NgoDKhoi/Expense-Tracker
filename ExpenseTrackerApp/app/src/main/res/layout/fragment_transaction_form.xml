@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root_transaction_form"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_dark"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Captured Receipt Container with 24dp Rounded Corners -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_image_container"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:cardCornerRadius="@dimen/radius_xl"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.35">
+
+        <ImageView
+            android:id="@+id/iv_captured_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="Captured Receipt" />
+
+    </androidx.cardview.widget.CardView>
+
+    <!-- EXPENSE / INCOME toggle -->
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/toggle_transaction_type"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_xxl"
+        app:singleSelection="true"
+        app:checkedButton="@+id/btn_type_expense"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_type_expense"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="EXPENSE"
+            style="?attr/materialButtonOutlinedStyle"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_type_income"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="INCOME"
+            style="?attr/materialButtonOutlinedStyle"/>
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <!-- Center Input Stack: Amount -> Note -> Date -> Category Chips -->
+    <LinearLayout
+        android:id="@+id/ll_form_inputs"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:layout_marginBottom="@dimen/spacing_m"
+        android:paddingHorizontal="@dimen/spacing_m"
+        app:layout_constraintBottom_toTopOf="@id/ll_post_capture_actions"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- 1. Amount input (largest) -->
+        <EditText
+            android:id="@+id/et_amount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="0 ₫"
+            android:textColorHint="@color/text_hint"
+            android:textColor="@color/white"
+            android:textSize="@dimen/text_size_headline"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:inputType="numberDecimal"
+            android:maxLines="1"
+            android:singleLine="true"
+            android:imeOptions="actionDone"
+            android:background="@drawable/bg_glass_pill"
+            android:paddingVertical="@dimen/spacing_s"
+            android:paddingHorizontal="@dimen/spacing_l" />
+
+        <!-- 2. Note input (below amount) - Temporarily hidden -->
+        <EditText
+            android:id="@+id/et_note"
+            android:layout_width="wrap_content"
+            android:minWidth="160dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_s"
+            android:hint="@string/hint_note"
+            android:textColorHint="@color/text_hint"
+            android:textColor="@color/white"
+            android:textSize="@dimen/text_size_body_small"
+            android:gravity="center"
+            android:inputType="textCapSentences"
+            android:maxLines="2"
+            android:imeOptions="actionDone"
+            android:background="@drawable/bg_glass_pill"
+            android:paddingVertical="@dimen/spacing_xs"
+            android:paddingHorizontal="@dimen/spacing_m"
+            android:visibility="gone" />
+
+        <!-- 3. Date picker trigger chip - Temporarily hidden -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_date"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/button_height_compact"
+            android:layout_marginTop="@dimen/spacing_s"
+            android:text="@string/label_today"
+            android:textSize="@dimen/text_size_caption"
+            android:textColor="@color/white"
+            app:icon="@drawable/ic_calendar"
+            app:iconSize="@dimen/icon_size_s"
+            app:iconTint="@color/white"
+            app:iconGravity="textStart"
+            android:backgroundTint="@color/surface_glass"
+            app:strokeColor="@color/surface_glass_stroke"
+            app:strokeWidth="1dp"
+            app:cornerRadius="@dimen/radius_pill"
+            android:paddingHorizontal="@dimen/spacing_m"
+            android:paddingVertical="0dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:visibility="gone" />
+
+        <!-- 4. Dynamic category chips -->
+        <HorizontalScrollView
+            android:id="@+id/sv_categories"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:layout_marginTop="@dimen/spacing_s">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chip_group_categories"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleLine="true"
+                app:singleSelection="true"
+                app:selectionRequired="true" />
+        </HorizontalScrollView>
+
+    </LinearLayout>
+
+    <!-- Post-capture action bar -->
+    <LinearLayout
+        android:id="@+id/ll_post_capture_actions"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="@dimen/spacing_xl"
+        android:layout_marginBottom="64dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0">
+
+        <ImageButton
+            android:id="@+id/btn_retake"
+            android:layout_width="@dimen/button_height_standard"
+            android:layout_height="@dimen/button_height_standard"
+            android:layout_marginEnd="@dimen/spacing_xl"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_close"
+            android:contentDescription="Cancel"
+            app:tint="@color/white" />
+
+        <!-- Custom Locket-style Save Button (matching btn_capture) -->
+        <com.example.expensetracker.ui.widget.CaptureButtonView
+            android:id="@+id/btn_save"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:contentDescription="Save Transaction" />
+
+        <View
+            android:layout_width="@dimen/button_height_standard"
+            android:layout_height="@dimen/button_height_standard"
+            android:layout_marginStart="@dimen/spacing_xl"
+            android:visibility="invisible" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

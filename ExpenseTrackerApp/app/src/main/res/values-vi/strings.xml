@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Quản Lý Chi Tiêu</string>
+
+    <!-- Navigation & Titles -->
+    <string name="nav_home">Tổng quan</string>
+    <string name="nav_wallets">Ví tiền</string>
+    <string name="nav_history">Lịch sử</string>
+    <string name="nav_ai">Trợ lý AI</string>
+    <string name="title_home">TỔNG QUAN</string>
+    <string name="title_history">LỊCH SỬ GIAO DỊCH</string>
+    <string name="title_wallets">VÍ TIỀN CỦA BẠN</string>
+    <string name="title_photos">ẢNH HÓA ĐƠN</string>
+    <string name="title_settings">CÀI ĐẶT</string>
+    <string name="title_ai">TRỢ LÝ TÀI CHÍNH</string>
+
+    <!-- Actions & Buttons -->
+    <string name="btn_save">Lưu</string>
+    <string name="btn_capture">Chụp</string>
+    <string name="btn_retake">Hủy</string>
+    <string name="btn_add">Thêm</string>
+    <string name="btn_add_wallet">Tạo ví mới</string>
+    <string name="btn_add_category">+ Thêm</string>
+    <string name="action_create">Tạo</string>
+    <string name="action_cancel">Hủy</string>
+    <string name="action_delete">Xóa</string>
+    <string name="action_edit">Sửa</string>
+    <string name="action_undo">HOÀN TÁC</string>
+    <string name="action_get_started">Bắt đầu ngay</string>
+    <string name="action_next">Tiếp theo</string>
+    <string name="action_skip">Bỏ qua</string>
+
+    <!-- Dashboard & Overview -->
+    <string name="label_total_balance">Tổng số dư</string>
+    <string name="label_total_expense">Tổng chi tiêu</string>
+    <string name="label_total_income">Tổng thu nhập</string>
+    <string name="label_recent_transactions">Giao dịch gần đây</string>
+    <string name="filter_day">Ngày</string>
+    <string name="filter_month">Tháng</string>
+    <string name="filter_year">Năm</string>
+    <string name="filter_all">Tất cả</string>
+
+    <!-- Search & Filter -->
+    <string name="hint_search_history">Tìm kiếm giao dịch…</string>
+    <string name="filter_type_all">Tất cả</string>
+    <string name="filter_type_expense">Chi tiêu</string>
+    <string name="filter_type_income">Thu nhập</string>
+
+    <!-- Form & Input -->
+    <string name="hint_amount">0 ₫</string>
+    <string name="hint_note">Thêm ghi chú…</string>
+    <string name="label_today">Hôm nay</string>
+    <string name="label_category">Danh mục</string>
+    <string name="type_expense">Chi tiêu</string>
+    <string name="type_income">Thu nhập</string>
+    <string name="error_amount_required">Vui lòng nhập số tiền</string>
+    <string name="error_wallet_required">Vui lòng chọn hoặc tạo ví trước</string>
+    <string name="error_category_name_required">Vui lòng nhập tên danh mục</string>
+    <string name="error_wallet_name_required">Vui lòng nhập tên ví</string>
+    <string name="dialog_title_add_category">Tạo danh mục mới</string>
+    <string name="dialog_title_add_wallet">Tạo ví mới</string>
+    <string name="dialog_title_edit_wallet">Chỉnh sửa ví</string>
+    <string name="hint_category_name">Tên danh mục</string>
+    <string name="hint_wallet_name">Tên ví</string>
+    <string name="hint_initial_balance">Số dư ban đầu</string>
+
+    <!-- Default Categories -->
+    <string name="cat_food">Ăn uống</string>
+    <string name="cat_transport">Di chuyển</string>
+    <string name="cat_utilities">Hóa đơn</string>
+    <string name="cat_shopping">Mua sắm</string>
+    <string name="cat_entertainment">Giải trí</string>
+    <string name="cat_other">Khác</string>
+
+    <!-- Empty States -->
+    <string name="empty_history_title">Chưa có giao dịch</string>
+    <string name="empty_history_desc">Chụp biên lai hoặc ghi chép để lưu giao dịch đầu tiên của bạn!</string>
+    <string name="empty_photos_title">Chưa có ảnh biên lai</string>
+    <string name="empty_photos_desc">Biên lai và ảnh bạn chụp sẽ xuất hiện trong bộ sưu tập này.</string>
+    <string name="empty_wallets_title">Chưa có ví tiền</string>
+    <string name="empty_wallets_desc">Hãy tạo chiếc ví đầu tiên để bắt đầu quản lý dòng tiền của bạn.</string>
+
+    <!-- Swipe Delete -->
+    <string name="msg_transaction_deleted">Đã xóa giao dịch</string>
+    <string name="msg_transaction_restored">Đã khôi phục giao dịch</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title_1">Chụp &amp; Ghi Chép Siêu Tốc</string>
+    <string name="onboarding_desc_1">Đưa camera chụp hóa đơn hoặc bảng giá. Ghi nhận chi tiêu chỉ trong vài giây mà không cần nhập liệu phức tạp.</string>
+    <string name="onboarding_title_2">Điều Hướng Cử Chỉ Đa Chiều</string>
+    <string name="onboarding_desc_2">Vuốt sang trái mở Tổng quan, vuốt sang phải mở Kho ảnh biên lai, vuốt lên xem chi tiết từng giao dịch.</string>
+    <string name="onboarding_title_3">Quản Lý Ví &amp; Trợ Lý AI</string>
+    <string name="onboarding_desc_3">Theo dõi chi tiêu theo từng ví tiền, xem biểu đồ phân tích trực quan và nhận phân tích tài chính từ AI.</string>
+</resources>

@@ -2,6 +2,7 @@ package com.example.expensetracker.core.database.di;
 
 import android.content.Context;
 import com.example.expensetracker.core.database.ExpenseDatabase;
+import com.example.expensetracker.core.database.dao.CategoryDao;
 import com.example.expensetracker.core.database.dao.TransactionDao;
 import com.example.expensetracker.core.database.dao.WalletDao;
 import dagger.Module;
@@ -25,5 +26,10 @@ public class DatabaseModule {
     @Provides
     WalletDao provideWalletDao(ExpenseDatabase database) {
         return database.walletDao();
+    }
+
+    @Provides
+    CategoryDao provideCategoryDao(ExpenseDatabase database) {
+        return database.categoryDao();
     }
 }

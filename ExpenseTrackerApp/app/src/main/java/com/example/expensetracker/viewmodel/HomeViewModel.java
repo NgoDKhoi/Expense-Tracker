@@ -13,6 +13,9 @@ import androidx.lifecycle.ViewModel;
 import com.example.expensetracker.core.domain.model.CategoryTotalModel;
 import com.example.expensetracker.core.domain.model.TransactionModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
+import com.example.expensetracker.core.domain.usecase.AddTransactionUseCase;
+import com.example.expensetracker.core.domain.usecase.DeleteTransactionUseCase;
+import com.example.expensetracker.core.domain.usecase.DeleteWalletUseCase;
 import com.example.expensetracker.core.domain.usecase.GetAllTransactionsUseCase;
 import com.example.expensetracker.core.domain.usecase.GetAllWalletsUseCase;
 import com.example.expensetracker.core.domain.usecase.GetCategoryTotalsUseCase;
@@ -20,6 +23,7 @@ import com.example.expensetracker.core.domain.usecase.GetRecentTransactionsUseCa
 import com.example.expensetracker.core.domain.usecase.GetTotalExpenseUseCase;
 import com.example.expensetracker.core.domain.usecase.GetTotalIncomeUseCase;
 import com.example.expensetracker.core.domain.usecase.InsertWalletUseCase;
+import com.example.expensetracker.core.domain.usecase.UpdateWalletUseCase;
 
 import java.util.Calendar;
 import java.util.List;
@@ -41,6 +45,10 @@ public class HomeViewModel extends ViewModel {
     private final GetCategoryTotalsUseCase getCategoryTotalsUseCase;
     private final GetAllWalletsUseCase getAllWalletsUseCase;
     private final InsertWalletUseCase insertWalletUseCase;
+    private final UpdateWalletUseCase updateWalletUseCase;
+    private final DeleteWalletUseCase deleteWalletUseCase;
+    private final DeleteTransactionUseCase deleteTransactionUseCase;
+    private final AddTransactionUseCase addTransactionUseCase;
 
     private final LiveData<List<TransactionModel>> recentExpenses;
     private final LiveData<List<WalletModel>> wallets;
@@ -58,7 +66,11 @@ public class HomeViewModel extends ViewModel {
             GetTotalIncomeUseCase getTotalIncomeUseCase,
             GetCategoryTotalsUseCase getCategoryTotalsUseCase,
             GetAllWalletsUseCase getAllWalletsUseCase,
-            InsertWalletUseCase insertWalletUseCase) {
+            InsertWalletUseCase insertWalletUseCase,
+            UpdateWalletUseCase updateWalletUseCase,
+            DeleteWalletUseCase deleteWalletUseCase,
+            DeleteTransactionUseCase deleteTransactionUseCase,
+            AddTransactionUseCase addTransactionUseCase) {
 
         Log.d(TAG, "HomeViewModel created with injected use cases.");
 
@@ -69,6 +81,10 @@ public class HomeViewModel extends ViewModel {
         this.getCategoryTotalsUseCase = getCategoryTotalsUseCase;
         this.getAllWalletsUseCase = getAllWalletsUseCase;
         this.insertWalletUseCase = insertWalletUseCase;
+        this.updateWalletUseCase = updateWalletUseCase;
+        this.deleteWalletUseCase = deleteWalletUseCase;
+        this.deleteTransactionUseCase = deleteTransactionUseCase;
+        this.addTransactionUseCase = addTransactionUseCase;
 
         recentExpenses = getRecentTransactionsUseCase.execute(5);
         wallets = getAllWalletsUseCase.execute();
@@ -161,11 +177,32 @@ public class HomeViewModel extends ViewModel {
     }
 
     public void insertWallet(String name, double initialBalance) {
+        insertWallet(name, initialBalance, "#FF5722", "account_balance_wallet");
+    }
+
+    public void insertWallet(String name, double initialBalance, String colorHex, String iconName) {
         Log.d(TAG, "insertWallet: name=" + name + ", balance=" + initialBalance);
         WalletModel wallet = new WalletModel();
         wallet.setName(name);
         wallet.setBalance(initialBalance);
+        wallet.setColorHex(colorHex);
+        wallet.setIconName(iconName);
         insertWalletUseCase.execute(wallet);
     }
-}
 
+    public void updateWallet(WalletModel wallet) {
+        updateWalletUseCase.execute(wallet);
+    }
+
+    public void deleteWallet(long walletId) {
+        deleteWalletUseCase.execute(walletId);
+    }
+
+    public void deleteTransaction(TransactionModel transaction) {
+        deleteTransactionUseCase.execute(transaction);
+    }
+
+    public void undoDeleteTransaction(TransactionModel transaction) {
+        addTransactionUseCase.execute(transaction);
+    }
+}

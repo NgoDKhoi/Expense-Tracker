@@ -62,6 +62,12 @@ public class ReceiptDetailFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(view, (v, insets) -> {
+            androidx.core.graphics.Insets systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars());
+            v.setPadding(0, 0, 0, systemBars.bottom);
+            return insets;
+        });
 
         ImageView ivReceiptImage = view.findViewById(R.id.iv_receipt_image);
         TextView tvCategory = view.findViewById(R.id.tv_category);
@@ -88,7 +94,8 @@ public class ReceiptDetailFragment extends Fragment {
 
         tvCategory.setText(category != null ? category : "Other");
         
-        tvAmount.setText(String.format(Locale.getDefault(), "$%.2f", amount));
+        java.text.NumberFormat format = java.text.NumberFormat.getNumberInstance(java.util.Locale.US); format.setMinimumFractionDigits(0); format.setMaximumFractionDigits(2);
+        tvAmount.setText(format.format(amount) + " ₫");
 
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy - HH:mm", Locale.getDefault());
         tvDate.setText(sdf.format(new Date(timestamp)));

@@ -3,49 +3,87 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
+    android:layout_marginTop="@dimen/spacing_xs"
+    android:layout_marginBottom="@dimen/spacing_s"
     app:cardBackgroundColor="@color/card_dark"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="2dp">
+    app:cardCornerRadius="@dimen/radius_l"
+    app:cardElevation="3dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="20dp"
-        android:gravity="center_vertical">
+        android:orientation="horizontal">
 
-        <ImageView
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@android:drawable/ic_menu_myplaces"
-            app:tint="@color/colorAccent"
-            android:background="#22FFFFFF"
-            android:padding="10dp" />
+        <!-- Left accent color bar -->
+        <View
+            android:id="@+id/view_wallet_color_bar"
+            android:layout_width="6dp"
+            android:layout_height="match_parent"
+            android:background="@color/colorAccent" />
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="16dp">
+            android:orientation="horizontal"
+            android:padding="@dimen/spacing_m"
+            android:gravity="center_vertical">
 
-            <TextView
-                android:id="@+id/tv_wallet_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#FFFFFF"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+            <!-- Rounded icon container -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cv_wallet_icon_container"
+                android:layout_width="@dimen/thumbnail_size"
+                android:layout_height="@dimen/thumbnail_size"
+                app:cardCornerRadius="@dimen/radius_m"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/surface_dark">
 
-            <TextView
-                android:id="@+id/tv_wallet_balance"
-                android:layout_width="wrap_content"
+                <ImageView
+                    android:id="@+id/iv_wallet_icon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/ic_wallet"
+                    android:padding="@dimen/spacing_m"
+                    app:tint="@color/colorAccent"
+                    android:contentDescription="Wallet Icon" />
+            </androidx.cardview.widget.CardView>
+
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:textColor="@color/colorAccent"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:layout_marginTop="4dp" />
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="@dimen/spacing_m"
+                android:layout_marginEnd="@dimen/spacing_s">
+
+                <TextView
+                    android:id="@+id/tv_wallet_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_primary"
+                    android:textSize="@dimen/text_size_body"
+                    android:textStyle="bold"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:id="@+id/tv_wallet_balance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/income_green"
+                    android:textSize="@dimen/text_size_title"
+                    android:textStyle="bold"
+                    android:layout_marginTop="@dimen/spacing_xxs" />
+
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/btn_wallet_options"
+                android:layout_width="@dimen/button_height_compact"
+                android:layout_height="@dimen/button_height_compact"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_settings"
+                app:tint="@color/text_hint"
+                android:contentDescription="Wallet Options" />
 
         </LinearLayout>
     </LinearLayout>

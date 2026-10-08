@@ -6,6 +6,9 @@ import androidx.lifecycle.MutableLiveData;
 import com.example.expensetracker.core.domain.model.CategoryTotalModel;
 import com.example.expensetracker.core.domain.model.TransactionModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
+import com.example.expensetracker.core.domain.usecase.AddTransactionUseCase;
+import com.example.expensetracker.core.domain.usecase.DeleteTransactionUseCase;
+import com.example.expensetracker.core.domain.usecase.DeleteWalletUseCase;
 import com.example.expensetracker.core.domain.usecase.GetAllTransactionsUseCase;
 import com.example.expensetracker.core.domain.usecase.GetAllWalletsUseCase;
 import com.example.expensetracker.core.domain.usecase.GetCategoryTotalsUseCase;
@@ -13,6 +16,7 @@ import com.example.expensetracker.core.domain.usecase.GetRecentTransactionsUseCa
 import com.example.expensetracker.core.domain.usecase.GetTotalExpenseUseCase;
 import com.example.expensetracker.core.domain.usecase.GetTotalIncomeUseCase;
 import com.example.expensetracker.core.domain.usecase.InsertWalletUseCase;
+import com.example.expensetracker.core.domain.usecase.UpdateWalletUseCase;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -20,10 +24,7 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -42,13 +43,17 @@ public class HomeViewModelTest {
     @Mock private GetCategoryTotalsUseCase getCategoryTotalsUseCase;
     @Mock private GetAllWalletsUseCase getAllWalletsUseCase;
     @Mock private InsertWalletUseCase insertWalletUseCase;
+    @Mock private UpdateWalletUseCase updateWalletUseCase;
+    @Mock private DeleteWalletUseCase deleteWalletUseCase;
+    @Mock private DeleteTransactionUseCase deleteTransactionUseCase;
+    @Mock private AddTransactionUseCase addTransactionUseCase;
 
     private HomeViewModel viewModel;
 
     @Before
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        
+
         // Mock default behaviors
         when(getAllTransactionsUseCase.execute()).thenReturn(new MutableLiveData<>());
         when(getRecentTransactionsUseCase.execute(anyInt())).thenReturn(new MutableLiveData<>());
@@ -64,25 +69,37 @@ public class HomeViewModelTest {
                 getTotalIncomeUseCase,
                 getCategoryTotalsUseCase,
                 getAllWalletsUseCase,
-                insertWalletUseCase
+                insertWalletUseCase,
+                updateWalletUseCase,
+                deleteWalletUseCase,
+                deleteTransactionUseCase,
+                addTransactionUseCase
         );
     }
 
     @Test
     public void testGetRecentExpenses_ReturnsExpectedLiveData() {
-        // Act
         var result = viewModel.getRecentExpenses();
-        
-        // Assert
-        org.junit.Assert.assertNotNull(result);
+        assertNotNull(result);
     }
 
     @Test
     public void testInsertWallet_CallsUseCase() {
-        // Act
         viewModel.insertWallet("Main Wallet", 500.0);
-        
-        // Assert
         verify(insertWalletUseCase).execute(any(WalletModel.class));
+    }
+
+    @Test
+    public void testDeleteTransaction_CallsUseCase() {
+        TransactionModel tx = new TransactionModel();
+        viewModel.deleteTransaction(tx);
+        verify(deleteTransactionUseCase).execute(tx);
+    }
+
+    @Test
+    public void testUndoDeleteTransaction_CallsUseCase() {
+        TransactionModel tx = new TransactionModel();
+        viewModel.undoDeleteTransaction(tx);
+        verify(addTransactionUseCase).execute(tx);
     }
 }

@@ -1,4 +1,5 @@
 package com.example.expensetracker.core.database.repository;
+
 import javax.inject.Inject;
 
 import android.util.Log;
@@ -31,7 +32,29 @@ public class WalletRepositoryImpl implements IWalletRepository {
             try {
                 walletDao.insertWallet(EntityMapper.toEntity(wallet));
             } catch (Exception e) {
-                Log.d(TAG, "Error inserting wallet", e);
+                Log.e(TAG, "Error inserting wallet", e);
+            }
+        });
+    }
+
+    @Override
+    public void updateWallet(WalletModel wallet) {
+        executorService.execute(() -> {
+            try {
+                walletDao.updateWallet(EntityMapper.toEntity(wallet));
+            } catch (Exception e) {
+                Log.e(TAG, "Error updating wallet", e);
+            }
+        });
+    }
+
+    @Override
+    public void deleteWallet(long id) {
+        executorService.execute(() -> {
+            try {
+                walletDao.deleteWallet(id);
+            } catch (Exception e) {
+                Log.e(TAG, "Error deleting wallet", e);
             }
         });
     }
@@ -46,7 +69,7 @@ public class WalletRepositoryImpl implements IWalletRepository {
         try {
             return EntityMapper.toModel(walletDao.getWalletById(id));
         } catch (Exception e) {
-            Log.d(TAG, "Error getting wallet by id", e);
+            Log.e(TAG, "Error getting wallet by id", e);
             return null;
         }
     }
@@ -57,10 +80,8 @@ public class WalletRepositoryImpl implements IWalletRepository {
             try {
                 walletDao.updateBalance(walletId, amountChange);
             } catch (Exception e) {
-                Log.d(TAG, "Error updating balance", e);
+                Log.e(TAG, "Error updating balance", e);
             }
         });
     }
 }
-
-
