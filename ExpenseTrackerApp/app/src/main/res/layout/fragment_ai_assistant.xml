@@ -5,15 +5,17 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/background_dark"
-    android:padding="16dp"
+    android:padding="24dp"
     android:gravity="center">
 
     <ImageView
-        android:layout_width="64dp"
-        android:layout_height="64dp"
-        android:src="@android:drawable/ic_menu_info_details"
-        app:tint="@color/text_secondary"
-        android:layout_marginBottom="16dp"/>
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:background="@drawable/bg_avatar_circle"
+        android:padding="16dp"
+        android:src="@drawable/ic_pet_mascot"
+        android:contentDescription="Virtual Pet Mascot"
+        android:layout_marginBottom="20dp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -22,13 +24,26 @@
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="@color/white"
-        android:layout_marginBottom="8dp" />
+        android:layout_marginBottom="12dp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Coming soon in Phase 5"
-        android:textSize="14sp"
-        android:textColor="@color/text_secondary" />
+        android:text="Nuôi linh vật mỗi khi đạt mục tiêu chi tiêu hằng ngày và nhận tư vấn tài chính thông minh từ trợ lý AI."
+        android:textAlignment="center"
+        android:textSize="15sp"
+        android:textColor="@color/text_secondary"
+        android:lineSpacingExtra="4dp"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Coming soon in Phase 4+"
+        android:textSize="12sp"
+        android:textColor="@color/colorAccent"
+        android:background="@drawable/bg_glass_pill"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="8dp" />
 
 </LinearLayout>

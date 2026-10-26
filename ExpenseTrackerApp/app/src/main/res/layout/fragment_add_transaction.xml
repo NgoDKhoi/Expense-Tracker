@@ -67,12 +67,12 @@
         app:layout_constraintEnd_toEndOf="parent">
 
         <ImageButton
-            android:id="@+id/btn_settings"
+            android:id="@+id/btn_voice_input"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_settings"
-            android:contentDescription="Settings"
+            android:src="@drawable/ic_mic"
+            android:contentDescription="Voice Input"
             app:tint="@color/white" />
 
         <TextView
@@ -87,12 +87,14 @@
             android:textStyle="bold" />
 
         <ImageButton
-            android:id="@+id/btn_voice_input"
+            android:id="@+id/btn_settings"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_mic"
-            android:contentDescription="Voice Input"
+            android:background="@drawable/bg_avatar_circle"
+            android:padding="10dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_person"
+            android:contentDescription="User Profile and Settings"
             app:tint="@color/white" />
     </LinearLayout>
 

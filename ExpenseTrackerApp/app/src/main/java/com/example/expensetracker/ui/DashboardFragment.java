@@ -10,19 +10,14 @@ import androidx.fragment.app.Fragment;
 import com.example.expensetracker.R;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import android.app.AlertDialog;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.text.InputType;
 import androidx.lifecycle.ViewModelProvider;
 import com.example.expensetracker.ExpenseTrackerApplication;
-// imports removed
 import com.example.expensetracker.viewmodel.HomeViewModel;
 
 public class DashboardFragment extends Fragment {
 
     private BottomNavigationView bottomNav;
-    private FloatingActionButton fabAddWallet;
+    private FloatingActionButton fabPetAi;
     @javax.inject.Inject
     ViewModelProvider.Factory viewModelFactory;
     private HomeViewModel viewModel;
@@ -41,7 +36,7 @@ public class DashboardFragment extends Fragment {
         viewModel = new ViewModelProvider(this, viewModelFactory).get(HomeViewModel.class);
 
         bottomNav = view.findViewById(R.id.dashboard_bottom_nav);
-        fabAddWallet = view.findViewById(R.id.fab_add_wallet);
+        fabPetAi = view.findViewById(R.id.fab_pet_ai);
 
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
@@ -49,12 +44,16 @@ public class DashboardFragment extends Fragment {
             
             if (itemId == R.id.nav_overview) {
                 selectedFragment = new DashboardOverviewFragment();
+                if (fabPetAi != null) fabPetAi.show();
             } else if (itemId == R.id.nav_wallets) {
                 selectedFragment = new WalletsFragment();
+                if (fabPetAi != null) fabPetAi.show();
             } else if (itemId == R.id.nav_history) {
                 selectedFragment = new HistoryFragment();
+                if (fabPetAi != null) fabPetAi.show();
             } else if (itemId == R.id.nav_ai) {
                 selectedFragment = new AiAssistantFragment();
+                if (fabPetAi != null) fabPetAi.hide();
             }
 
             if (selectedFragment != null) {
@@ -70,39 +69,8 @@ public class DashboardFragment extends Fragment {
             bottomNav.setSelectedItemId(R.id.nav_overview);
         }
 
-        fabAddWallet.setOnClickListener(v -> showAddWalletDialog());
-    }
-
-    private void showAddWalletDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("Add Wallet");
-
-        LinearLayout layout = new LinearLayout(requireContext());
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(50, 40, 50, 10);
-
-        final EditText nameInput = new EditText(requireContext());
-        nameInput.setHint("Wallet Name");
-        layout.addView(nameInput);
-
-        final EditText balanceInput = new EditText(requireContext());
-        balanceInput.setHint("Initial Balance");
-        balanceInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        layout.addView(balanceInput);
-
-        builder.setView(layout);
-
-        builder.setPositiveButton("Add", (dialog, which) -> {
-            String name = nameInput.getText().toString();
-            String balanceStr = balanceInput.getText().toString();
-            if (!name.isEmpty() && !balanceStr.isEmpty()) {
-                double balance = Double.parseDouble(balanceStr);
-                viewModel.insertWallet(name, balance);
-            }
-        });
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
-        builder.show();
+        if (fabPetAi != null) {
+            fabPetAi.setOnClickListener(v -> bottomNav.setSelectedItemId(R.id.nav_ai));
+        }
     }
 }
-
