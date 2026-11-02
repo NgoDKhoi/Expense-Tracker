@@ -5,7 +5,8 @@ build/
 local.properties
 */build/
 */*/build/
-
+.claude/
+skills-lock.json
 # AI Agent configuration (contains personal paths & internal context)
 .agents/
 
