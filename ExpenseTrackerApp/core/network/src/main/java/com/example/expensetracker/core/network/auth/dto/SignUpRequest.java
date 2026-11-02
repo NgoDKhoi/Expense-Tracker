@@ -1,0 +1,25 @@
+package com.example.expensetracker.core.network.auth.dto;
+
+import com.google.gson.annotations.SerializedName;
+
+public class SignUpRequest {
+    final String email;
+    final String password;
+    // Stored by Supabase as user_metadata.
+    final Data data;
+
+    public SignUpRequest(String email, String password, String displayName) {
+        this.email = email;
+        this.password = password;
+        this.data = new Data(displayName);
+    }
+
+    static class Data {
+        @SerializedName("display_name")
+        final String displayName;
+
+        Data(String displayName) {
+            this.displayName = displayName;
+        }
+    }
+}
