@@ -41,4 +41,18 @@ public interface WalletDao {
         softDeleteWallet(id, now);
         softDeleteTransactionsOfWallet(id, now);
     }
+
+    // --- sync ---
+
+    @Query("SELECT * FROM wallet_table WHERE syncStatus = 'PENDING'")
+    List<WalletEntity> getPending();
+
+    @Query("UPDATE wallet_table SET syncStatus = 'SYNCED' WHERE uuid = :uuid AND updatedAt = :updatedAt")
+    void markSynced(String uuid, long updatedAt);
+
+    @Query("SELECT * FROM wallet_table WHERE uuid = :uuid")
+    WalletEntity findByUuid(String uuid);
+
+    @Query("DELETE FROM wallet_table WHERE deleted = 1 AND syncStatus = 'SYNCED'")
+    void purgeSyncedDeletes();
 }

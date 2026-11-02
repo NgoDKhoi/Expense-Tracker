@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.expensetracker.core.domain.Result;
 import com.example.expensetracker.core.domain.model.UserModel;
+import com.example.expensetracker.core.domain.repository.ISyncScheduler;
 import com.example.expensetracker.core.domain.usecase.GetCurrentUserUseCase;
 import com.example.expensetracker.core.domain.usecase.ResetPasswordUseCase;
 import com.example.expensetracker.core.domain.usecase.SignInUseCase;
@@ -24,6 +25,7 @@ public class AuthViewModel extends ViewModel {
     private final SignOutUseCase signOutUseCase;
     private final GetCurrentUserUseCase getCurrentUserUseCase;
     private final ExecutorService executor;
+    private final ISyncScheduler syncScheduler;
 
     private final MutableLiveData<Result<UserModel>> authState = new MutableLiveData<>();
     private final MutableLiveData<Result<Void>> resetState = new MutableLiveData<>();
@@ -34,13 +36,15 @@ public class AuthViewModel extends ViewModel {
                          ResetPasswordUseCase resetPasswordUseCase,
                          SignOutUseCase signOutUseCase,
                          GetCurrentUserUseCase getCurrentUserUseCase,
-                         ExecutorService executor) {
+                         ExecutorService executor,
+                         ISyncScheduler syncScheduler) {
         this.signInUseCase = signInUseCase;
         this.signUpUseCase = signUpUseCase;
         this.resetPasswordUseCase = resetPasswordUseCase;
         this.signOutUseCase = signOutUseCase;
         this.getCurrentUserUseCase = getCurrentUserUseCase;
         this.executor = executor;
+        this.syncScheduler = syncScheduler;
     }
 
     public LiveData<Result<UserModel>> getAuthState() {
@@ -58,12 +62,12 @@ public class AuthViewModel extends ViewModel {
 
     public void signIn(String emailOrUsername, String password) {
         authState.setValue(Result.loading());
-        executor.execute(() -> authState.postValue(signInUseCase.execute(emailOrUsername, password)));
+        executor.execute(() -> publishAuth(signInUseCase.execute(emailOrUsername, password)));
     }
 
     public void signUp(String displayName, String username, String email, String password) {
         authState.setValue(Result.loading());
-        executor.execute(() -> authState.postValue(signUpUseCase.execute(displayName, username, email, password)));
+        executor.execute(() -> publishAuth(signUpUseCase.execute(displayName, username, email, password)));
     }
 
     public void resetPassword(String emailOrUsername) {
@@ -73,5 +77,11 @@ public class AuthViewModel extends ViewModel {
 
     public void signOut() {
         executor.execute(signOutUseCase::execute);
+    }
+
+    private void publishAuth(Result<UserModel> result) {
+        // Back up / fetch this account's data right away instead of waiting for the next trigger.
+        if (result.isSuccess()) syncScheduler.requestSync();
+        authState.postValue(result);
     }
 }

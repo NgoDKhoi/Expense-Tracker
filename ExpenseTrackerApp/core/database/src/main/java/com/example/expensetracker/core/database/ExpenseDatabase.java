@@ -86,8 +86,8 @@ public abstract class ExpenseDatabase extends RoomDatabase {
                     + " FROM transactions t WHERE t.walletId = w.id), 0),"
                     + " w.colorHex, w.iconName,"
                     + " CASE WHEN w.id = (SELECT MIN(id) FROM wallet_table WHERE name = ?) THEN ? ELSE " + RANDOM_UUID + " END,"
-                    + " ?, 0, 'PENDING' FROM wallet_table w",
-                    new Object[]{DEFAULT_WALLET_NAME, DEFAULT_WALLET_UUID, now});
+                    + " CASE WHEN w.id = (SELECT MIN(id) FROM wallet_table WHERE name = ?) THEN 0 ELSE ? END, 0, 'PENDING' FROM wallet_table w",
+                    new Object[]{DEFAULT_WALLET_NAME, DEFAULT_WALLET_UUID, DEFAULT_WALLET_NAME, now});
             db.execSQL("DROP TABLE wallet_table");
             db.execSQL("ALTER TABLE wallet_table_new RENAME TO wallet_table");
             db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_wallet_table_uuid ON wallet_table (uuid)");
@@ -96,13 +96,13 @@ public abstract class ExpenseDatabase extends RoomDatabase {
             db.execSQL("ALTER TABLE categories ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0");
             db.execSQL("ALTER TABLE categories ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0");
             db.execSQL("ALTER TABLE categories ADD COLUMN syncStatus TEXT");
+            db.execSQL("UPDATE categories SET updatedAt = ?, syncStatus = 'PENDING'", new Object[]{now});
             // Only the oldest row per default (name, type) gets the fixed uuid, so a user-made duplicate can't break the unique index.
             for (String[] c : DEFAULT_CATEGORIES) {
-                db.execSQL("UPDATE categories SET uuid = ? WHERE id = (SELECT MIN(id) FROM categories WHERE name = ? AND type = ?)",
+                db.execSQL("UPDATE categories SET uuid = ?, updatedAt = 0 WHERE id = (SELECT MIN(id) FROM categories WHERE name = ? AND type = ?)",
                         new Object[]{defaultCategoryUuid(c[1], c[0]), c[0], c[1]});
             }
             db.execSQL("UPDATE categories SET uuid = " + RANDOM_UUID + " WHERE uuid IS NULL");
-            db.execSQL("UPDATE categories SET updatedAt = ?, syncStatus = 'PENDING'", new Object[]{now});
             db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_categories_uuid ON categories (uuid)");
         }
     };
@@ -139,20 +139,22 @@ public abstract class ExpenseDatabase extends RoomDatabase {
         return INSTANCE;
     }
 
-    /** Seeds default categories / wallet when the table has no visible rows. REPLACE revives a soft-deleted default. */
+    /**
+     * Seeds default categories / wallet when the table has no visible rows. REPLACE revives a soft-deleted default.
+     * updatedAt = 0: on a new device the account's own copy of these rows (if any) is newer and wins.
+     */
     static void seedDefaults(SupportSQLiteDatabase db) {
-        long now = System.currentTimeMillis();
         if (countLive(db, "categories") == 0) {
             for (String[] c : DEFAULT_CATEGORIES) {
                 db.execSQL("INSERT OR REPLACE INTO categories (uuid, name, type, colorHex, iconName, updatedAt, deleted, syncStatus)"
-                        + " VALUES (?, ?, ?, ?, ?, ?, 0, 'PENDING')",
-                        new Object[]{defaultCategoryUuid(c[1], c[0]), c[0], c[1], c[2], c[3], now});
+                        + " VALUES (?, ?, ?, ?, ?, 0, 0, 'PENDING')",
+                        new Object[]{defaultCategoryUuid(c[1], c[0]), c[0], c[1], c[2], c[3]});
             }
         }
         if (countLive(db, "wallet_table") == 0) {
             db.execSQL("INSERT OR REPLACE INTO wallet_table (uuid, name, initialBalance, colorHex, iconName, updatedAt, deleted, syncStatus)"
-                    + " VALUES (?, ?, 0, '#FF5722', 'account_balance_wallet', ?, 0, 'PENDING')",
-                    new Object[]{DEFAULT_WALLET_UUID, DEFAULT_WALLET_NAME, now});
+                    + " VALUES (?, ?, 0, '#FF5722', 'account_balance_wallet', 0, 0, 'PENDING')",
+                    new Object[]{DEFAULT_WALLET_UUID, DEFAULT_WALLET_NAME});
         }
     }
 

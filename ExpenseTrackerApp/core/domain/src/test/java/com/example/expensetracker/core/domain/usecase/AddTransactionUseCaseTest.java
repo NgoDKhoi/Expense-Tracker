@@ -2,6 +2,7 @@ package com.example.expensetracker.core.domain.usecase;
 
 import com.example.expensetracker.core.domain.Result;
 import com.example.expensetracker.core.domain.model.TransactionModel;
+import com.example.expensetracker.core.domain.repository.ISyncScheduler;
 import com.example.expensetracker.core.domain.repository.ITransactionRepository;
 
 import org.junit.Before;
@@ -19,12 +20,15 @@ public class AddTransactionUseCaseTest {
     @Mock
     private ITransactionRepository mockRepository;
 
+    @Mock
+    private ISyncScheduler mockScheduler;
+
     private AddTransactionUseCase useCase;
 
     @Before
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        useCase = new AddTransactionUseCase(mockRepository);
+        useCase = new AddTransactionUseCase(mockRepository, mockScheduler);
     }
 
     @Test
@@ -44,5 +48,6 @@ public class AddTransactionUseCaseTest {
         ArgumentCaptor<TransactionModel> txCaptor = ArgumentCaptor.forClass(TransactionModel.class);
         verify(mockRepository).insertExpense(txCaptor.capture());
         assertEquals(150.0, txCaptor.getValue().getAmount(), 0.001);
+        verify(mockScheduler).requestSync();
     }
 }

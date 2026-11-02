@@ -1,6 +1,10 @@
 package com.example.expensetracker.di;
 
 import android.content.Context;
+
+import com.example.expensetracker.core.domain.repository.ISyncScheduler;
+import com.example.expensetracker.sync.WorkManagerSyncScheduler;
+
 import dagger.Module;
 import dagger.Provides;
 import javax.inject.Singleton;
@@ -17,6 +21,12 @@ public class AppModule {
     @Singleton
     Context provideContext() {
         return context;
+    }
+
+    @Provides
+    @Singleton
+    ISyncScheduler provideSyncScheduler(WorkManagerSyncScheduler scheduler) {
+        return scheduler;
     }
 
     @Provides

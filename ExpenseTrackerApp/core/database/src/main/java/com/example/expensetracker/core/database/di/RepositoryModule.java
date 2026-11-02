@@ -1,9 +1,11 @@
 package com.example.expensetracker.core.database.di;
 
 import com.example.expensetracker.core.database.repository.CategoryRepositoryImpl;
+import com.example.expensetracker.core.database.repository.SyncLocalImpl;
 import com.example.expensetracker.core.database.repository.TransactionRepositoryImpl;
 import com.example.expensetracker.core.database.repository.WalletRepositoryImpl;
 import com.example.expensetracker.core.domain.repository.ICategoryRepository;
+import com.example.expensetracker.core.domain.repository.ISyncLocal;
 import com.example.expensetracker.core.domain.repository.ITransactionRepository;
 import com.example.expensetracker.core.domain.repository.IWalletRepository;
 import dagger.Binds;
@@ -24,4 +26,8 @@ public abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract ICategoryRepository bindCategoryRepository(CategoryRepositoryImpl impl);
+
+    @Binds
+    @Singleton
+    abstract ISyncLocal bindSyncLocal(SyncLocalImpl impl);
 }

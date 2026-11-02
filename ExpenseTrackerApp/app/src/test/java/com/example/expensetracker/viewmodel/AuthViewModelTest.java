@@ -2,6 +2,7 @@ package com.example.expensetracker.viewmodel;
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 
+import com.example.expensetracker.core.domain.repository.ISyncScheduler;
 import com.example.expensetracker.core.domain.Result;
 import com.example.expensetracker.core.domain.model.UserModel;
 import com.example.expensetracker.core.domain.usecase.GetCurrentUserUseCase;
@@ -22,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,6 +38,7 @@ public class AuthViewModelTest {
     @Mock private SignOutUseCase signOutUseCase;
     @Mock private GetCurrentUserUseCase getCurrentUserUseCase;
     @Mock private ExecutorService executor;
+    @Mock private ISyncScheduler syncScheduler;
 
     private AuthViewModel viewModel;
 
@@ -49,7 +52,7 @@ public class AuthViewModelTest {
         }).when(executor).execute(any(Runnable.class));
 
         viewModel = new AuthViewModel(signInUseCase, signUpUseCase, resetPasswordUseCase,
-                signOutUseCase, getCurrentUserUseCase, executor);
+                signOutUseCase, getCurrentUserUseCase, executor, syncScheduler);
     }
 
     @Test
@@ -61,6 +64,7 @@ public class AuthViewModelTest {
 
         assertTrue(viewModel.getAuthState().getValue().isSuccess());
         assertEquals("a@b.com", viewModel.getAuthState().getValue().getData().getEmail());
+        verify(syncScheduler).requestSync();
     }
 
     @Test
@@ -71,6 +75,7 @@ public class AuthViewModelTest {
         viewModel.signUp("An", "an", "a@b.com", "123456");
 
         assertTrue(viewModel.getAuthState().getValue().isError());
+        verify(syncScheduler, never()).requestSync();
         assertEquals("Email đã được đăng ký", viewModel.getAuthState().getValue().getMessage());
     }
 

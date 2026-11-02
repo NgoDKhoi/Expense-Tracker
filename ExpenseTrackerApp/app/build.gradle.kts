@@ -64,6 +64,9 @@ dependencies {
     // MPAndroidChart
     implementation(libs.mpandroidchart)
     
+    // Background sync
+    implementation(libs.work.runtime)
+
     // Dagger 2 DI
     implementation(libs.dagger)
     annotationProcessor(libs.dagger.compiler)

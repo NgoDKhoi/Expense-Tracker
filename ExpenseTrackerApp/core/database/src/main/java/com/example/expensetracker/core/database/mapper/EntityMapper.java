@@ -69,13 +69,18 @@ public class EntityMapper {
 
     public static WalletModel toModel(WalletWithBalance row) {
         if (row == null) return null;
-        WalletEntity entity = row.getWallet();
+        WalletModel model = toModel(row.getWallet());
+        model.setBalance(row.getBalance());
+        return model;
+    }
+
+    public static WalletModel toModel(WalletEntity entity) {
+        if (entity == null) return null;
         WalletModel model = new WalletModel();
         model.setId(entity.getId());
         model.setUuid(entity.getUuid());
         model.setName(entity.getName());
         model.setInitialBalance(entity.getInitialBalance());
-        model.setBalance(row.getBalance());
         model.setUpdatedAt(entity.getUpdatedAt());
         model.setDeleted(entity.isDeleted());
         model.setColorHex(entity.getColorHex());

@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.example.expensetracker.core.domain.Result;
 import com.example.expensetracker.core.domain.model.CategoryModel;
 import com.example.expensetracker.core.domain.repository.ICategoryRepository;
+import com.example.expensetracker.core.domain.repository.ISyncScheduler;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -25,6 +26,9 @@ public class CategoryUseCaseTest {
     @Mock
     private ICategoryRepository mockRepository;
 
+    @Mock
+    private ISyncScheduler mockScheduler;
+
     private GetCategoriesUseCase getCategoriesUseCase;
     private AddCategoryUseCase addCategoryUseCase;
 
@@ -32,7 +36,7 @@ public class CategoryUseCaseTest {
     public void setup() {
         MockitoAnnotations.openMocks(this);
         getCategoriesUseCase = new GetCategoriesUseCase(mockRepository);
-        addCategoryUseCase = new AddCategoryUseCase(mockRepository);
+        addCategoryUseCase = new AddCategoryUseCase(mockRepository, mockScheduler);
     }
 
     @Test

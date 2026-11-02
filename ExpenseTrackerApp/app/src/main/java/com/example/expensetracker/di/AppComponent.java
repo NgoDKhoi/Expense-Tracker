@@ -3,8 +3,10 @@ package com.example.expensetracker.di;
 import com.example.expensetracker.ExpenseTrackerApplication;
 import com.example.expensetracker.MainActivity;
 import com.example.expensetracker.core.database.di.DatabaseModule;
+import com.example.expensetracker.core.domain.usecase.SyncDataUseCase;
 import com.example.expensetracker.core.database.di.RepositoryModule;
 import com.example.expensetracker.core.network.di.NetworkModule;
+import com.example.expensetracker.sync.WorkManagerSyncScheduler;
 import com.example.expensetracker.ui.AccountFragment;
 import com.example.expensetracker.ui.AuthFragment;
 import com.example.expensetracker.ui.AddTransactionFragment;
@@ -31,6 +33,10 @@ import javax.inject.Singleton;
 public interface AppComponent {
     void inject(ExpenseTrackerApplication application);
     void inject(MainActivity activity);
+
+    // Background sync (used outside of injected classes: the worker and Application)
+    SyncDataUseCase syncDataUseCase();
+    WorkManagerSyncScheduler syncScheduler();
     
     // Fragments
     void inject(AddTransactionFragment fragment);

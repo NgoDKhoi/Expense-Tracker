@@ -5,6 +5,7 @@ import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
+import androidx.room.Update;
 
 import com.example.expensetracker.core.database.entity.CategoryEntity;
 
@@ -30,4 +31,21 @@ public interface CategoryDao {
 
     @Query("SELECT COUNT(*) FROM categories")
     int getCategoryCount();
+
+    @Update
+    void updateCategory(CategoryEntity category);
+
+    // --- sync ---
+
+    @Query("SELECT * FROM categories WHERE syncStatus = 'PENDING'")
+    List<CategoryEntity> getPending();
+
+    @Query("UPDATE categories SET syncStatus = 'SYNCED' WHERE uuid = :uuid AND updatedAt = :updatedAt")
+    void markSynced(String uuid, long updatedAt);
+
+    @Query("SELECT * FROM categories WHERE uuid = :uuid")
+    CategoryEntity findByUuid(String uuid);
+
+    @Query("DELETE FROM categories WHERE deleted = 1 AND syncStatus = 'SYNCED'")
+    void purgeSyncedDeletes();
 }
