@@ -14,6 +14,10 @@ public class TransactionModel {
     private String note;
     private long walletId;
     private String type;
+    private long updatedAt;
+    private boolean deleted;
+    // Only filled for sync: the server links transactions to wallets by uuid, not by the local id.
+    private String walletUuid;
 
     public TransactionModel() {
     }
@@ -63,6 +67,15 @@ public class TransactionModel {
 
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
+
+    public long getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
+
+    public boolean isDeleted() { return deleted; }
+    public void setDeleted(boolean deleted) { this.deleted = deleted; }
+
+    public String getWalletUuid() { return walletUuid; }
+    public void setWalletUuid(String walletUuid) { this.walletUuid = walletUuid; }
 
     public static class Builder {
         private long id;

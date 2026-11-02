@@ -7,6 +7,8 @@ public class CategoryModel {
     private String type;
     private String colorHex;
     private String iconName;
+    private long updatedAt;
+    private boolean deleted;
 
     public CategoryModel() {
     }
@@ -43,4 +45,10 @@ public class CategoryModel {
 
     public String getIconName() { return iconName; }
     public void setIconName(String iconName) { this.iconName = iconName; }
+
+    public long getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
+
+    public boolean isDeleted() { return deleted; }
+    public void setDeleted(boolean deleted) { this.deleted = deleted; }
 }

@@ -41,4 +41,5 @@ dependencies {
     annotationProcessor(libs.dagger.compiler)
 
     testImplementation(libs.junit)
+    testImplementation(libs.mockito.core)
 }

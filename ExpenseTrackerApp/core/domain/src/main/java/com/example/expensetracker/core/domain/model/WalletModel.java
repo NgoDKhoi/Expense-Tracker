@@ -9,6 +9,8 @@ public class WalletModel {
     private double balance;
     private String colorHex;
     private String iconName;
+    private long updatedAt;
+    private boolean deleted;
 
     public WalletModel() {
     }
@@ -47,4 +49,10 @@ public class WalletModel {
 
     public String getIconName() { return iconName != null ? iconName : "account_balance_wallet"; }
     public void setIconName(String iconName) { this.iconName = iconName; }
+
+    public long getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
+
+    public boolean isDeleted() { return deleted; }
+    public void setDeleted(boolean deleted) { this.deleted = deleted; }
 }

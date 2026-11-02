@@ -9,11 +9,13 @@ import com.example.expensetracker.core.domain.repository.IAuthRepository;
 import com.example.expensetracker.core.network.BuildConfig;
 import com.example.expensetracker.core.network.auth.dto.AuthResponse;
 import com.example.expensetracker.core.network.auth.dto.EmailRequest;
+import com.example.expensetracker.core.network.auth.dto.RefreshRequest;
 import com.example.expensetracker.core.network.auth.dto.SignInRequest;
 import com.example.expensetracker.core.network.auth.dto.SignUpRequest;
 import com.example.expensetracker.core.network.auth.dto.UsernameRequest;
 
 import java.io.IOException;
+import java.util.function.LongSupplier;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -23,8 +25,7 @@ import retrofit2.Response;
 
 /**
  * Supabase Auth over REST. The session is kept in a private SharedPreferences file.
- * shortcut: the access token is never refreshed (expires after ~1h); add a
- * grant_type=refresh_token call when sync starts sending the token to the server.
+ * The access token lasts about an hour; getValidAccessToken() refreshes it before use.
  */
 @Singleton
 public class AuthRepositoryImpl implements IAuthRepository {
@@ -38,13 +39,22 @@ public class AuthRepositoryImpl implements IAuthRepository {
     private static final String KEY_DISPLAY_NAME = "display_name";
     private static final String KEY_USERNAME = "username";
 
+    // Refresh when the token has less than this left, so it can't expire mid-request.
+    private static final long REFRESH_MARGIN_MS = 60_000;
+
     private final SupabaseAuthApi api;
     private final SharedPreferences prefs;
+    private final LongSupplier clock;
 
     @Inject
     public AuthRepositoryImpl(Context context, SupabaseAuthApi api) {
+        this(context, api, System::currentTimeMillis);
+    }
+
+    AuthRepositoryImpl(Context context, SupabaseAuthApi api, LongSupplier clock) {
         this.api = api;
         this.prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        this.clock = clock;
     }
 
     @Override
@@ -124,6 +134,34 @@ public class AuthRepositoryImpl implements IAuthRepository {
         if (id == null) return null;
         return new UserModel(id, prefs.getString(KEY_EMAIL, ""), prefs.getString(KEY_DISPLAY_NAME, ""),
                 prefs.getString(KEY_USERNAME, ""));
+    }
+
+    // synchronized: Supabase refresh tokens are single-use, so two parallel refreshes would sign the user out.
+    @Override
+    public synchronized Result<String> getValidAccessToken() {
+        String token = prefs.getString(KEY_ACCESS_TOKEN, null);
+        String refreshToken = prefs.getString(KEY_REFRESH_TOKEN, null);
+        if (token == null || refreshToken == null) return Result.success(null);
+        long expiresAtMs = prefs.getLong(KEY_EXPIRES_AT, 0) * 1000;
+        if (expiresAtMs - clock.getAsLong() > REFRESH_MARGIN_MS) return Result.success(token);
+        try {
+            Response<AuthResponse> response = api.refresh(new RefreshRequest(refreshToken)).execute();
+            if (!response.isSuccessful()) {
+                // Server trouble or rate limit: keep the session and retry later.
+                if (response.code() >= 500 || response.code() == 429) return Result.error(errorMessage(response), null);
+                // The session was revoked or the refresh token is no longer valid: treat as signed out.
+                prefs.edit().clear().apply();
+                return Result.success(null);
+            }
+            AuthResponse body = response.body();
+            if (body == null || body.accessToken == null || body.user == null) {
+                return Result.error("Phản hồi làm mới phiên không hợp lệ", null);
+            }
+            saveSession(body);
+            return Result.success(body.accessToken);
+        } catch (IOException e) {
+            return Result.error(AuthErrorMapper.NETWORK, e);
+        }
     }
 
     private UserModel saveSession(AuthResponse body) {

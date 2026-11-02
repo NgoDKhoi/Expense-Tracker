@@ -2,6 +2,7 @@ package com.example.expensetracker.core.network.auth;
 
 import com.example.expensetracker.core.network.auth.dto.AuthResponse;
 import com.example.expensetracker.core.network.auth.dto.EmailRequest;
+import com.example.expensetracker.core.network.auth.dto.RefreshRequest;
 import com.example.expensetracker.core.network.auth.dto.SignInRequest;
 import com.example.expensetracker.core.network.auth.dto.SignUpRequest;
 import com.example.expensetracker.core.network.auth.dto.UsernameRequest;
@@ -19,6 +20,9 @@ public interface SupabaseAuthApi {
 
     @POST("auth/v1/token?grant_type=password")
     Call<AuthResponse> signIn(@Body SignInRequest body);
+
+    @POST("auth/v1/token?grant_type=refresh_token")
+    Call<AuthResponse> refresh(@Body RefreshRequest body);
 
     @POST("auth/v1/recover")
     Call<Void> recover(@Body EmailRequest body);

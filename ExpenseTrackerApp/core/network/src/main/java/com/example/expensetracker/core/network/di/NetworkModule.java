@@ -1,9 +1,14 @@
 package com.example.expensetracker.core.network.di;
 
 import com.example.expensetracker.core.domain.repository.IAuthRepository;
+import com.example.expensetracker.core.domain.repository.ISyncRemote;
 import com.example.expensetracker.core.network.BuildConfig;
 import com.example.expensetracker.core.network.auth.AuthRepositoryImpl;
 import com.example.expensetracker.core.network.auth.SupabaseAuthApi;
+import com.example.expensetracker.core.network.sync.SupabaseSyncApi;
+import com.example.expensetracker.core.network.sync.SupabaseSyncRemote;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import javax.inject.Singleton;
 
@@ -21,10 +26,25 @@ public abstract class NetworkModule {
     @Singleton
     abstract IAuthRepository bindAuthRepository(AuthRepositoryImpl impl);
 
-    // Retrofit stays inside this method so modules depending on :core:network don't need it on their classpath.
+    @Binds
+    @Singleton
+    abstract ISyncRemote bindSyncRemote(SupabaseSyncRemote impl);
+
+    // Retrofit stays inside these methods so modules depending on :core:network don't need it on their classpath.
     @Provides
     @Singleton
     static SupabaseAuthApi provideSupabaseAuthApi() {
+        return retrofit(new Gson()).create(SupabaseAuthApi.class);
+    }
+
+    // Bulk upserts need every row to carry the same keys, so nulls are sent instead of dropped.
+    @Provides
+    @Singleton
+    static SupabaseSyncApi provideSupabaseSyncApi() {
+        return retrofit(new GsonBuilder().serializeNulls().create()).create(SupabaseSyncApi.class);
+    }
+
+    private static Retrofit retrofit(Gson gson) {
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(chain -> chain.proceed(chain.request().newBuilder()
                         .header("apikey", BuildConfig.SUPABASE_ANON_KEY)
@@ -36,8 +56,7 @@ public abstract class NetworkModule {
         return new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .client(client)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
-                .create(SupabaseAuthApi.class);
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .build();
     }
 }

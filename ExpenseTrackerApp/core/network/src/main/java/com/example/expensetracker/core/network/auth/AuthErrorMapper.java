@@ -52,6 +52,9 @@ public final class AuthErrorMapper {
                     return "Chức năng đăng ký đang bị tắt";
                 case "PGRST202":
                     return "Chưa cài đặt đăng nhập bằng tên trên Supabase (chạy file supabase/username_login.sql)";
+                case "PGRST205":
+                case "42P01":
+                    return "Chưa tạo bảng đồng bộ trên Supabase (chạy file supabase/sync_schema.sql)";
                 case "over_email_send_rate_limit":
                 case "over_request_rate_limit":
                     return "Thao tác quá nhiều lần, vui lòng thử lại sau ít phút";

@@ -31,6 +31,8 @@ public class EntityMapper {
         model.setNote(entity.getNote());
         model.setWalletId(entity.getWalletId());
         model.setType(entity.getType() != null ? entity.getType().name() : null);
+        model.setUpdatedAt(entity.getUpdatedAt());
+        model.setDeleted(entity.isDeleted());
         return model;
     }
 
@@ -60,6 +62,8 @@ public class EntityMapper {
                 entity.setType(TransactionType.EXPENSE);
             }
         }
+        entity.setUpdatedAt(model.getUpdatedAt());
+        entity.setDeleted(model.isDeleted());
         return entity;
     }
 
@@ -72,6 +76,8 @@ public class EntityMapper {
         model.setName(entity.getName());
         model.setInitialBalance(entity.getInitialBalance());
         model.setBalance(row.getBalance());
+        model.setUpdatedAt(entity.getUpdatedAt());
+        model.setDeleted(entity.isDeleted());
         model.setColorHex(entity.getColorHex());
         model.setIconName(entity.getIconName());
         return model;
@@ -84,6 +90,8 @@ public class EntityMapper {
         entity.setUuid(model.getUuid());
         entity.setName(model.getName());
         entity.setInitialBalance(model.getInitialBalance());
+        entity.setUpdatedAt(model.getUpdatedAt());
+        entity.setDeleted(model.isDeleted());
         entity.setColorHex(model.getColorHex());
         entity.setIconName(model.getIconName());
         return entity;
@@ -129,6 +137,8 @@ public class EntityMapper {
         CategoryModel model = new CategoryModel();
         model.setId(entity.getId());
         model.setUuid(entity.getUuid());
+        model.setUpdatedAt(entity.getUpdatedAt());
+        model.setDeleted(entity.isDeleted());
         model.setName(entity.getName());
         model.setType(entity.getType());
         model.setColorHex(entity.getColorHex());
@@ -141,6 +151,8 @@ public class EntityMapper {
         CategoryEntity entity = new CategoryEntity();
         entity.setId(model.getId());
         entity.setUuid(model.getUuid());
+        entity.setUpdatedAt(model.getUpdatedAt());
+        entity.setDeleted(model.isDeleted());
         entity.setName(model.getName());
         entity.setType(model.getType());
         entity.setColorHex(model.getColorHex());
