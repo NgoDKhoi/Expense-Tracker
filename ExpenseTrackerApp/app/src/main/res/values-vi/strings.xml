@@ -92,6 +92,8 @@
     <string name="onboarding_title_3">Quản Lý Ví &amp; Trợ Lý AI</string>
     <string name="onboarding_desc_3">Theo dõi chi tiêu theo từng ví tiền, xem biểu đồ phân tích trực quan và nhận phân tích tài chính từ AI.</string>
 
+    <string name="error_camera_unavailable">Không mở được camera trên thiết bị này</string>
+
     <!-- Account / Auth -->
     <string name="auth_title">Tài khoản</string>
     <string name="auth_guest_note">Đăng nhập không bắt buộc. Chi tiêu của bạn luôn được lưu trên máy.</string>

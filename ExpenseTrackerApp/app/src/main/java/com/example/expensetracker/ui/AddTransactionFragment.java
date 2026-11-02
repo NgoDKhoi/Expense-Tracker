@@ -3,6 +3,7 @@ package com.example.expensetracker.ui;
 import android.app.AlertDialog;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -324,6 +325,12 @@ public class AddTransactionFragment extends Fragment {
                 
             } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
+            } catch (RuntimeException e) {
+                // A camera the CameraX version can't handle (e.g. a new Android release) must not kill the app.
+                Log.e("AddTransactionFragment", "Could not start camera", e);
+                if (isAdded()) {
+                    Toast.makeText(requireContext(), R.string.error_camera_unavailable, Toast.LENGTH_LONG).show();
+                }
             }
         }, ContextCompat.getMainExecutor(requireContext()));
     }

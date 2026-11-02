@@ -92,6 +92,8 @@
     <string name="onboarding_title_3">Smart Wallets &amp; AI</string>
     <string name="onboarding_desc_3">Organize multiple wallets, analyze spending breakdowns, and receive smart AI insights.</string>
 
+    <string name="error_camera_unavailable">Could not open the camera on this device</string>
+
     <!-- Account / Auth -->
     <string name="auth_title">Account</string>
     <string name="auth_guest_note">Signing in is optional. Your expenses are always saved on this device.</string>
