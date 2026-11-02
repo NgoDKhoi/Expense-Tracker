@@ -91,4 +91,27 @@
     <string name="onboarding_desc_2">Swipe left for Dashboard, swipe right for Receipt Gallery, and swipe up for transaction details.</string>
     <string name="onboarding_title_3">Smart Wallets &amp; AI</string>
     <string name="onboarding_desc_3">Organize multiple wallets, analyze spending breakdowns, and receive smart AI insights.</string>
+
+    <!-- Account / Auth -->
+    <string name="auth_title">Account</string>
+    <string name="auth_guest_note">Signing in is optional. Your expenses are always saved on this device.</string>
+    <string name="auth_tab_sign_in">Sign in</string>
+    <string name="auth_tab_sign_up">Sign up</string>
+    <string name="auth_btn_sign_up">Create account</string>
+    <string name="auth_forgot_password">Forgot password?</string>
+    <string name="hint_display_name">Display name</string>
+    <string name="hint_email">Email</string>
+    <string name="hint_password">Password</string>
+    <string name="hint_confirm_password">Confirm password</string>
+    <string name="error_password_mismatch">Passwords do not match</string>
+    <string name="msg_sign_in_success">Signed in</string>
+    <string name="msg_sign_up_success">Account created</string>
+    <string name="msg_reset_sent">Password reset email sent to %1$s</string>
+    <string name="account_local_data_note">Your expenses are still saved on this device.</string>
+    <string name="btn_sign_out">Sign out</string>
+    <string name="dialog_sign_out_title">Sign out?</string>
+    <string name="dialog_sign_out_message">You can sign in again at any time.</string>
+    <string name="msg_signed_out">Signed out</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_account">Account</string>
 </resources>

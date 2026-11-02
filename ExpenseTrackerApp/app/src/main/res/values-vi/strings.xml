@@ -91,4 +91,27 @@
     <string name="onboarding_desc_2">Vuốt sang trái mở Tổng quan, vuốt sang phải mở Kho ảnh biên lai, vuốt lên xem chi tiết từng giao dịch.</string>
     <string name="onboarding_title_3">Quản Lý Ví &amp; Trợ Lý AI</string>
     <string name="onboarding_desc_3">Theo dõi chi tiêu theo từng ví tiền, xem biểu đồ phân tích trực quan và nhận phân tích tài chính từ AI.</string>
+
+    <!-- Account / Auth -->
+    <string name="auth_title">Tài khoản</string>
+    <string name="auth_guest_note">Đăng nhập không bắt buộc. Chi tiêu của bạn luôn được lưu trên máy.</string>
+    <string name="auth_tab_sign_in">Đăng nhập</string>
+    <string name="auth_tab_sign_up">Đăng ký</string>
+    <string name="auth_btn_sign_up">Tạo tài khoản</string>
+    <string name="auth_forgot_password">Quên mật khẩu?</string>
+    <string name="hint_display_name">Tên hiển thị</string>
+    <string name="hint_email">Email</string>
+    <string name="hint_password">Mật khẩu</string>
+    <string name="hint_confirm_password">Nhập lại mật khẩu</string>
+    <string name="error_password_mismatch">Mật khẩu nhập lại không khớp</string>
+    <string name="msg_sign_in_success">Đăng nhập thành công</string>
+    <string name="msg_sign_up_success">Tạo tài khoản thành công</string>
+    <string name="msg_reset_sent">Đã gửi email đặt lại mật khẩu tới %1$s</string>
+    <string name="account_local_data_note">Dữ liệu chi tiêu vẫn được lưu trên máy.</string>
+    <string name="btn_sign_out">Đăng xuất</string>
+    <string name="dialog_sign_out_title">Đăng xuất?</string>
+    <string name="dialog_sign_out_message">Bạn có thể đăng nhập lại bất cứ lúc nào.</string>
+    <string name="msg_signed_out">Đã đăng xuất</string>
+    <string name="cd_back">Quay lại</string>
+    <string name="cd_account">Tài khoản</string>
 </resources>

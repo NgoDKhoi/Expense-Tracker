@@ -4,6 +4,9 @@ import com.example.expensetracker.ExpenseTrackerApplication;
 import com.example.expensetracker.MainActivity;
 import com.example.expensetracker.core.database.di.DatabaseModule;
 import com.example.expensetracker.core.database.di.RepositoryModule;
+import com.example.expensetracker.core.network.di.NetworkModule;
+import com.example.expensetracker.ui.AccountFragment;
+import com.example.expensetracker.ui.AuthFragment;
 import com.example.expensetracker.ui.AddTransactionFragment;
 import com.example.expensetracker.ui.AiAssistantFragment;
 import com.example.expensetracker.ui.WalletsFragment;
@@ -22,6 +25,7 @@ import javax.inject.Singleton;
         AppModule.class,
         DatabaseModule.class,
         RepositoryModule.class,
+        NetworkModule.class,
         ViewModelModule.class
 })
 public interface AppComponent {
@@ -39,5 +43,7 @@ public interface AppComponent {
     void inject(PhotosFragment fragment);
     void inject(ReceiptDetailFragment fragment);
     void inject(SettingsFragment fragment);
+    void inject(AuthFragment fragment);
+    void inject(AccountFragment fragment);
     void inject(com.example.expensetracker.ui.TransactionFormFragment fragment);
 }
