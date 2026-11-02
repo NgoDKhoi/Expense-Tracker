@@ -66,7 +66,8 @@ Tài khoản người dùng dùng **Supabase Auth**, gọi qua REST API bằng R
 **Thiết lập một lần cho project Supabase (chỉ người quản lý project làm):**
 1. Tạo project trên [supabase.com](https://supabase.com).
 2. Vào **Authentication → Sign In / Providers → Email**, tắt **Confirm email**, rồi bấm Save.
-3. (Tuỳ chọn) Vào **Authentication → URL Configuration**, đặt **Site URL**. Đây là trang mở ra khi bấm link trong email "Quên mật khẩu".
+3. Bật **đăng nhập bằng tên đăng nhập**: vào **SQL Editor → New query**, dán toàn bộ nội dung file [`supabase/username_login.sql`](supabase/username_login.sql), rồi bấm **Run**. File này tạo bảng `profiles` (lưu tên đăng nhập, không trùng) và hàm `email_for_username`. Chạy lại nhiều lần không sao.
+4. (Tuỳ chọn) Vào **Authentication → URL Configuration**, đặt **Site URL**. Đây là trang mở ra khi bấm link trong email "Quên mật khẩu".
 
 **Mỗi thành viên tự làm trên máy mình:**
 1. Lấy **Project URL**: bấm nút **Connect** trên dashboard (hoặc **Settings → Data API**). URL có dạng `https://<project-ref>.supabase.co`, với `<project-ref>` là đoạn sau `/project/` trên thanh địa chỉ. Lấy key: vào **Settings → API Keys**, copy **Publishable key** (`sb_publishable_...`).
