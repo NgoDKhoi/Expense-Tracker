@@ -1,30 +1,40 @@
 package com.example.expensetracker.ui;
 
+import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.expensetracker.ExpenseTrackerApplication;
 import com.example.expensetracker.R;
 import com.example.expensetracker.viewmodel.AuthViewModel;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
 import javax.inject.Inject;
 
-/** Sign in / sign up screen, opened from the avatar button on the camera screen. */
-public class AuthFragment extends Fragment {
+/**
+ * Sign in / sign up, shown as a bottom sheet over the live camera when the avatar is tapped.
+ * Open it with {@code new AuthFragment().show(activityFragmentManager, TAG)}.
+ */
+public class AuthFragment extends BottomSheetDialogFragment {
+
+    public static final String TAG = "auth_sheet";
 
     /** Fragment result key sent whenever the signed-in user changes. */
     public static final String RESULT_AUTH_CHANGED = "auth_changed";
@@ -38,6 +48,9 @@ public class AuthFragment extends Fragment {
     private TextInputLayout tilName;
     private TextInputLayout tilUsername;
     private TextInputLayout tilEmail;
+    private TextView tvTitle;
+    private MaterialButton btnModeSignIn;
+    private MaterialButton btnModeSignUp;
     private TextInputLayout tilConfirm;
     private TextInputEditText etName;
     private TextInputEditText etUsername;
@@ -47,6 +60,29 @@ public class AuthFragment extends Fragment {
     private MaterialButton btnSubmit;
     private View btnForgot;
     private View progress;
+
+    @Override
+    public int getTheme() {
+        return R.style.ThemeOverlay_ExpenseTracker_AuthSheet;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        // Open fully: the form is the whole point of the sheet, a half-collapsed state only hides fields.
+        BottomSheetBehavior<?> behavior = ((BottomSheetDialog) requireDialog()).getBehavior();
+        behavior.setSkipCollapsed(true);
+        behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+
+        Window window = requireDialog().getWindow();
+        if (window != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Frosted camera behind the sheet; devices without cross-window blur keep the plain dim.
+            window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.setBlurBehindRadius(getResources().getDimensionPixelSize(R.dimen.spacing_l));
+            window.setAttributes(params);
+        }
+    }
 
     @Nullable
     @Override
@@ -63,6 +99,9 @@ public class AuthFragment extends Fragment {
         tilName = view.findViewById(R.id.til_display_name);
         tilUsername = view.findViewById(R.id.til_username);
         tilEmail = view.findViewById(R.id.til_email);
+        tvTitle = view.findViewById(R.id.tv_auth_title);
+        btnModeSignIn = view.findViewById(R.id.btn_mode_sign_in);
+        btnModeSignUp = view.findViewById(R.id.btn_mode_sign_up);
         tilConfirm = view.findViewById(R.id.til_confirm_password);
         etName = view.findViewById(R.id.et_display_name);
         etUsername = view.findViewById(R.id.et_username);
@@ -73,12 +112,8 @@ public class AuthFragment extends Fragment {
         btnForgot = view.findViewById(R.id.btn_forgot_password);
         progress = view.findViewById(R.id.progress_auth);
 
-        view.findViewById(R.id.btn_auth_back).setOnClickListener(v -> close());
-
-        MaterialButtonToggleGroup toggle = view.findViewById(R.id.toggle_auth_mode);
-        toggle.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
-            if (isChecked) setSignUpMode(checkedId == R.id.btn_mode_sign_up);
-        });
+        btnModeSignIn.setOnClickListener(v -> setSignUpMode(false));
+        btnModeSignUp.setOnClickListener(v -> setSignUpMode(true));
         setSignUpMode(false);
 
         btnSubmit.setOnClickListener(v -> submit());
@@ -105,7 +140,9 @@ public class AuthFragment extends Fragment {
             if (result == null) return;
             setLoading(result.isLoading());
             if (result.isSuccess()) {
-                Snackbar.make(view, getString(R.string.msg_reset_sent, text(etEmail)), Snackbar.LENGTH_LONG).show();
+                Snackbar.make(view, getString(R.string.msg_reset_sent, text(etEmail)), Snackbar.LENGTH_LONG)
+                        .setAnchorView(btnSubmit)
+                        .show();
             } else if (result.isError()) {
                 showError(result.getMessage());
             }
@@ -114,17 +151,22 @@ public class AuthFragment extends Fragment {
 
     private void setSignUpMode(boolean signUp) {
         signUpMode = signUp;
+        // Checkable buttons toggle themselves on click; keep exactly one selected.
+        btnModeSignIn.setChecked(!signUp);
+        btnModeSignUp.setChecked(signUp);
+        tvTitle.setText(signUp ? R.string.auth_title_sign_up : R.string.auth_title_sign_in);
         int visibleInSignUp = signUp ? View.VISIBLE : View.GONE;
         tilName.setVisibility(visibleInSignUp);
         tilUsername.setVisibility(visibleInSignUp);
         // Sign in (and password reset) accept a username, sign up needs a real email.
         tilEmail.setHint(signUp ? R.string.hint_email : R.string.hint_email_or_username);
+        tilEmail.setStartIconDrawable(signUp ? R.drawable.ic_mail : R.drawable.ic_person);
         etEmail.setInputType(signUp
                 ? InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
                 : InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         tilConfirm.setVisibility(visibleInSignUp);
         btnForgot.setVisibility(signUp ? View.GONE : View.VISIBLE);
-        btnSubmit.setText(signUp ? R.string.auth_btn_sign_up : R.string.auth_tab_sign_in);
+        btnSubmit.setText(submitLabel());
         clearErrors();
     }
 
@@ -143,7 +185,8 @@ public class AuthFragment extends Fragment {
 
     private void showError(String message) {
         if (message != null && getView() != null) {
-            Snackbar.make(getView(), message, Snackbar.LENGTH_LONG).show();
+            // Anchored so it never covers the button the user is about to tap again.
+            Snackbar.make(getView(), message, Snackbar.LENGTH_LONG).setAnchorView(btnSubmit).show();
         }
     }
 
@@ -153,12 +196,24 @@ public class AuthFragment extends Fragment {
 
     private void setLoading(boolean loading) {
         progress.setVisibility(loading ? View.VISIBLE : View.GONE);
+        // The spinner replaces the label, so the button keeps its size and place.
+        if (loading) {
+            btnSubmit.setText("");
+        } else {
+            btnSubmit.setText(submitLabel());
+        }
         btnSubmit.setEnabled(!loading);
         btnForgot.setEnabled(!loading);
+        btnModeSignIn.setEnabled(!loading);
+        btnModeSignUp.setEnabled(!loading);
+    }
+
+    private int submitLabel() {
+        return signUpMode ? R.string.auth_btn_sign_up : R.string.auth_tab_sign_in;
     }
 
     private void close() {
-        getParentFragmentManager().popBackStack();
+        dismiss();
     }
 
     private static String text(TextInputEditText editText) {

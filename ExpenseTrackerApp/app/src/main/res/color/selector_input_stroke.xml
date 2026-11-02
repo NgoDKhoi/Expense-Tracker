@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Outlined text field stroke on dark screens: accent when focused, glass stroke otherwise. -->
+<!-- Filled text fields on dark sheets: accent ring when focused, faint hairline otherwise. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:color="@color/colorAccent" android:state_focused="true" />
-    <item android:color="@color/text_hint" />
+    <item android:color="@color/divider_dark" />
 </selector>

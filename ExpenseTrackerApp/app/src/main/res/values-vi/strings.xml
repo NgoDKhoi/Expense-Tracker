@@ -95,7 +95,8 @@
     <string name="error_camera_unavailable">Không mở được camera trên thiết bị này</string>
 
     <!-- Account / Auth -->
-    <string name="auth_title">Tài khoản</string>
+    <string name="auth_title_sign_in">Chào bạn</string>
+    <string name="auth_title_sign_up">Tạo tài khoản</string>
     <string name="auth_guest_note">Đăng nhập không bắt buộc. Chi tiêu của bạn luôn được lưu trên máy.</string>
     <string name="auth_tab_sign_in">Đăng nhập</string>
     <string name="auth_tab_sign_up">Đăng ký</string>

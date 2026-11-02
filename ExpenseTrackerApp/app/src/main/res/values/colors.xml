@@ -16,6 +16,8 @@
     <color name="surface_glass">#25FFFFFF</color>
     <color name="surface_glass_stroke">#40FFFFFF</color>
     <color name="divider_dark">#20FFFFFF</color>
+    <!-- Near-opaque sheet over the live camera; the camera blurs behind it on Android 12+. -->
+    <color name="sheet_glass">#F2141414</color>
 
     <!-- Text colors -->
     <color name="text_primary">#FFFFFF</color>

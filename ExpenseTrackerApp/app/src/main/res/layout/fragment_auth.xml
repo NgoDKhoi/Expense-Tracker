@@ -1,86 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Sign in / sign up as a bottom sheet over the live camera. Controls sit low, in thumb reach. -->
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/background_dark"
-    android:clickable="true"
-    android:focusable="true"
-    android:fillViewport="true"
-    android:fitsSystemWindows="true">
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="@dimen/spacing_l">
+        android:paddingStart="@dimen/spacing_l"
+        android:paddingEnd="@dimen/spacing_l"
+        android:paddingBottom="@dimen/spacing_l">
 
-        <ImageButton
-            android:id="@+id/btn_auth_back"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="-12dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/cd_back"
-            android:src="@drawable/ic_arrow_back"
-            app:tint="@color/white" />
+        <com.google.android.material.bottomsheet.BottomSheetDragHandleView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:tint="@color/text_hint" />
 
         <TextView
+            android:id="@+id/tv_auth_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/spacing_m"
-            android:text="@string/auth_title"
-            android:textColor="@color/text_primary"
-            android:textSize="@dimen/text_size_headline"
-            android:textStyle="bold" />
+            android:text="@string/auth_title_sign_in"
+            android:textAppearance="@style/TextAppearance.ExpenseTracker.Headline" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_xs"
-            android:layout_marginBottom="@dimen/spacing_l"
             android:text="@string/auth_guest_note"
-            android:textColor="@color/text_secondary"
-            android:textSize="@dimen/text_size_body_small" />
+            android:textAppearance="@style/TextAppearance.ExpenseTracker.BodySecondary" />
 
-        <com.google.android.material.button.MaterialButtonToggleGroup
-            android:id="@+id/toggle_auth_mode"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_l"
             android:layout_marginBottom="@dimen/spacing_m"
-            app:checkedButton="@+id/btn_mode_sign_in"
-            app:selectionRequired="true"
-            app:singleSelection="true">
+            android:background="@drawable/bg_segment_track"
+            android:orientation="horizontal"
+            android:padding="@dimen/spacing_xs">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_mode_sign_in"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/auth_tab_sign_in"
-                android:textColor="@color/selector_toggle_text" />
+                style="@style/Widget.ExpenseTracker.SegmentButton"
+                android:checked="true"
+                android:text="@string/auth_tab_sign_in" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_mode_sign_up"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/auth_tab_sign_up"
-                android:textColor="@color/selector_toggle_text" />
-        </com.google.android.material.button.MaterialButtonToggleGroup>
+                style="@style/Widget.ExpenseTracker.SegmentButton"
+                android:text="@string/auth_tab_sign_up" />
+        </LinearLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/til_display_name"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            style="@style/Widget.ExpenseTracker.TextField"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/spacing_s"
             android:hint="@string/hint_display_name"
-            android:textColorHint="@color/text_secondary"
-            app:boxStrokeColor="@color/selector_input_stroke"
-            app:hintTextColor="@color/colorAccent">
+            app:startIconDrawable="@drawable/ic_person">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_display_name"
@@ -93,16 +74,13 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/til_username"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            style="@style/Widget.ExpenseTracker.TextField"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/spacing_s"
             android:hint="@string/hint_username"
-            android:textColorHint="@color/text_secondary"
-            app:boxStrokeColor="@color/selector_input_stroke"
             app:helperText="@string/helper_username"
-            app:helperTextTextColor="@color/text_secondary"
-            app:hintTextColor="@color/colorAccent">
+            app:startIconDrawable="@drawable/ic_alternate_email">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_username"
@@ -117,37 +95,32 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/til_email"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            style="@style/Widget.ExpenseTracker.TextField"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/spacing_s"
-            android:hint="@string/hint_email"
-            android:textColorHint="@color/text_secondary"
-            app:boxStrokeColor="@color/selector_input_stroke"
-            app:hintTextColor="@color/colorAccent">
+            android:hint="@string/hint_email_or_username"
+            app:startIconDrawable="@drawable/ic_person">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_email"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:autofillHints="emailAddress"
-                android:inputType="textEmailAddress"
+                android:inputType="textNoSuggestions"
                 android:maxLines="1"
                 android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/til_password"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            style="@style/Widget.ExpenseTracker.TextField"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/spacing_s"
             android:hint="@string/hint_password"
-            android:textColorHint="@color/text_secondary"
-            app:boxStrokeColor="@color/selector_input_stroke"
             app:endIconMode="password_toggle"
-            app:endIconTint="@color/text_secondary"
-            app:hintTextColor="@color/colorAccent">
+            app:startIconDrawable="@drawable/ic_lock">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_password"
@@ -161,16 +134,13 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/til_confirm_password"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            style="@style/Widget.ExpenseTracker.TextField"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/spacing_s"
             android:hint="@string/hint_confirm_password"
-            android:textColorHint="@color/text_secondary"
-            app:boxStrokeColor="@color/selector_input_stroke"
             app:endIconMode="password_toggle"
-            app:endIconTint="@color/text_secondary"
-            app:hintTextColor="@color/colorAccent">
+            app:startIconDrawable="@drawable/ic_lock">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_confirm_password"
@@ -190,23 +160,35 @@
             android:text="@string/auth_forgot_password"
             android:textColor="@color/colorAccent" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_auth_submit"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="@dimen/button_height_standard"
-            android:layout_marginTop="@dimen/spacing_m"
-            android:backgroundTint="@color/colorAccent"
-            android:text="@string/auth_tab_sign_in"
-            android:textColor="@color/white" />
-
-        <com.google.android.material.progressindicator.CircularProgressIndicator
-            android:id="@+id/progress_auth"
-            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="@dimen/spacing_m"
-            android:indeterminate="true"
-            android:visibility="gone"
-            app:indicatorColor="@color/colorAccent" />
+            android:layout_marginTop="@dimen/spacing_s">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_auth_submit"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="@string/auth_tab_sign_in"
+                android:textColor="@color/white"
+                android:textSize="@dimen/text_size_body"
+                app:backgroundTint="@color/colorAccent"
+                app:cornerRadius="@dimen/radius_pill" />
+
+            <!-- Shown in place of the button label while a request runs. -->
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/progress_auth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:elevation="8dp"
+                android:indeterminate="true"
+                android:visibility="gone"
+                app:indicatorColor="@color/white"
+                app:indicatorSize="24dp"
+                app:trackThickness="3dp" />
+        </FrameLayout>
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

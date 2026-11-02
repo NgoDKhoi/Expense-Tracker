@@ -211,10 +211,14 @@ public class AddTransactionFragment extends Fragment {
                 (key, result) -> updateAvatar(btnSettings));
 
         btnSettings.setOnClickListener(v -> {
-            Fragment target = authViewModel.getCurrentUser() != null ? new AccountFragment() : new AuthFragment();
+            if (authViewModel.getCurrentUser() == null) {
+                // Bottom sheet over the camera, so the camera keeps running behind it.
+                new AuthFragment().show(requireActivity().getSupportFragmentManager(), AuthFragment.TAG);
+                return;
+            }
             requireActivity().getSupportFragmentManager().beginTransaction()
                     .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
-                    .add(android.R.id.content, target)
+                    .add(android.R.id.content, new AccountFragment())
                     .addToBackStack(null)
                     .commit();
         });

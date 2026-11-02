@@ -95,7 +95,8 @@
     <string name="error_camera_unavailable">Could not open the camera on this device</string>
 
     <!-- Account / Auth -->
-    <string name="auth_title">Account</string>
+    <string name="auth_title_sign_in">Hi there</string>
+    <string name="auth_title_sign_up">Create your account</string>
     <string name="auth_guest_note">Signing in is optional. Your expenses are always saved on this device.</string>
     <string name="auth_tab_sign_in">Sign in</string>
     <string name="auth_tab_sign_up">Sign up</string>
