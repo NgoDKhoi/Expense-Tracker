@@ -10,6 +10,9 @@ skills-lock.json
 # AI Agent configuration (contains personal paths & internal context)
 .agents/
 
+# Local product notes (kept off the repo)
+PRODUCT.md
+
 # AI IDE artifacts
 .artifacts/
 

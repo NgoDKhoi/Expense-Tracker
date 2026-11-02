@@ -23,7 +23,7 @@ Dựa trên thiết kế UI/UX theo phong cách Locket (chụp nhanh - vuốt m�
 
 4. **Đồng bộ hóa ngoại tuyến (Offline-first & Deferred Sync)**
    - Hoạt động mượt mà không cần mạng. Mọi giao dịch được lưu ngay lập tức vào Local Database (Room).
-   - Cơ chế đồng bộ ngầm thông minh: Tự động phát hiện khi có mạng (Internet) để đẩy dữ liệu đã lưu tạm lên Server thông qua Background Service.
+   - Đăng nhập để sao lưu lên Supabase và dùng trên nhiều máy. Đồng bộ ngầm bằng WorkManager, tự chạy lại khi có mạng (xem mục *Sao lưu & đồng bộ*).
 
 5. **Trợ lý Ngân sách AI (AI Assistant - Gemini API)**
    - Hoạt động dưới dạng Chat icon hoặc Floating Bubble.
@@ -39,7 +39,7 @@ Dựa trên thiết kế UI/UX theo phong cách Locket (chụp nhanh - vuốt m�
 ### Core Android Components
 - **Activity**: `MainActivity` đóng vai trò là host chính (Single-Activity Architecture), sử dụng `ViewPager2` để điều hướng swipe 2 chiều giữa các màn hình chính.
 - **Fragment**: Gồm các màn hình độc lập như `DashboardFragment` (tổng quan & thẻ điều hướng), `CameraHostFragment` (Camera-first UI kiểu Locket-style), `PhotosFragment` (Lịch sử ảnh) và `AiAssistantFragment` (Trợ lý AI).
-- **Service & Broadcast Receiver**: Cặp bài trùng `SyncService` và `NetworkChangeReceiver` được dùng để theo dõi trạng thái mạng và thực hiện tiến trình đồng bộ dữ liệu ngầm một cách đáng tin cậy.
+- **Background work**: `SyncWorker` (WorkManager) chạy đồng bộ ngầm, có điều kiện "có mạng" và tự thử lại; `NetworkChangeReceiver` (NetworkCallback) yêu cầu đồng bộ mỗi khi máy có mạng.
 - **Content Provider (Optional)**: Hỗ trợ chia sẻ dữ liệu chi tiêu an toàn với các ứng dụng khác nếu có yêu cầu.
 
 ### Thư viện & Công cụ (Libraries & Tools)
@@ -83,12 +83,25 @@ Nếu thiếu 2 dòng trên, app vẫn chạy nhưng khi đăng nhập sẽ báo
 
 > Không bao giờ dùng **service_role / secret key** trong app. Key đó có toàn quyền với database.
 
+## 🔄 Sao lưu & đồng bộ (Sync)
+
+Cần chạy [`supabase/sync_schema.sql`](supabase/sync_schema.sql) một lần (bước 4 ở mục trên).
+
+- **Khách** dùng offline bình thường, dữ liệu chỉ nằm trên máy. **Đăng nhập** để sao lưu và dùng trên nhiều máy.
+- **Khi nào đồng bộ:** vài giây sau mỗi lần thêm / sửa / xóa, khi máy có mạng (kể cả lúc mở app), mỗi 6 giờ, và khi bấm *Đồng bộ ngay* ở trang Tài khoản.
+- **Cách hoạt động:** mỗi dòng có `uuid`, `updatedAt` và cờ `deleted` (xóa mềm). App đẩy các dòng `PENDING` lên (ví → danh mục → giao dịch), rồi kéo về các dòng đổi trên server sau lần kéo trước (`synced_at`). Hai máy cùng sửa một dòng thì **bản sửa mới hơn thắng**. Số dư ví được tính từ giao dịch, nên không bao giờ lệch giữa các máy.
+- **Đăng nhập** khi máy đang có chi tiêu của khách: app hỏi *gộp vào tài khoản* hay *xóa khỏi máy*.
+- **Đăng xuất** xóa dữ liệu trên máy; nếu còn thay đổi chưa sao lưu, app cảnh báo và cho đồng bộ trước.
+- **Chưa có:** đồng bộ ảnh hóa đơn (ảnh chỉ nằm trên máy và mất khi đăng xuất). Xung đột so theo đồng hồ của máy.
+
+Code: `SyncDataUseCase` (`:core:domain`), `SyncLocalImpl` (`:core:database`), `SupabaseSyncRemote` (`:core:network`), `SyncWorker` / `WorkManagerSyncScheduler` (`:app`).
+
 ## 🚀 Kế hoạch phát triển (Development Phases)
 
 Dự án được triển khai qua 5 giai đoạn:
 1. **Foundation & Setup**: Khởi tạo project, cài đặt dependencies, setup MVVM và thiết kế XML cơ bản.
 2. **Local Storage & Camera**: Cấu hình Room Database, viết các DAO; tích hợp CameraX để thực hiện tác vụ chụp và lưu ảnh offline.
-3. **Deferred Syncing & Background Tasks**: Xây dựng Service đồng bộ ngầm khi `NetworkChangeReceiver` báo có mạng.
+3. **Deferred Syncing & Background Tasks** *(đã xong)*: Đồng bộ theo tài khoản với Supabase qua WorkManager, chạy lại khi `NetworkChangeReceiver` báo có mạng.
 4. **UI/UX Flow & Data Display**: Hoàn thiện tính năng xem lịch sử với LiveData để binding dữ liệu ra UI.
 5. **AI Integration & Polish**: Gọi API AI để lấy tư vấn, tối ưu hóa tốc độ khởi động camera, dọn dẹp code và hoàn thiện thiết kế UI/UX.
 
