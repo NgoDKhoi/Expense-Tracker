@@ -32,8 +32,10 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.expensetracker.ExpenseTrackerApplication;
 import com.example.expensetracker.R;
+import com.example.expensetracker.core.domain.model.UserModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
 import com.example.expensetracker.viewmodel.AddTransactionViewModel;
+import com.example.expensetracker.viewmodel.AuthViewModel;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.File;
@@ -56,6 +58,8 @@ public class AddTransactionFragment extends Fragment {
     @Inject
     ViewModelProvider.Factory viewModelFactory;
     private AddTransactionViewModel viewModel;
+    private AuthViewModel authViewModel;
+    private TextView tvAvatarInitial;
     
     @Inject
     com.example.expensetracker.core.domain.usecase.InsertWalletUseCase insertWalletUseCase;
@@ -197,13 +201,35 @@ public class AddTransactionFragment extends Fragment {
         
         btnCapture.setOnClickListener(v -> takePhoto());
         
+        authViewModel = new ViewModelProvider(this, viewModelFactory).get(AuthViewModel.class);
+        tvAvatarInitial = view.findViewById(R.id.tv_avatar_initial);
+        updateAvatar(btnSettings);
+        // Auth/Account screens open on top of this one, so onResume doesn't run when they close.
+        requireActivity().getSupportFragmentManager().setFragmentResultListener(
+                AuthFragment.RESULT_AUTH_CHANGED, getViewLifecycleOwner(),
+                (key, result) -> updateAvatar(btnSettings));
+
         btnSettings.setOnClickListener(v -> {
+            Fragment target = authViewModel.getCurrentUser() != null ? new AccountFragment() : new AuthFragment();
             requireActivity().getSupportFragmentManager().beginTransaction()
                     .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
-                    .add(android.R.id.content, new SettingsFragment())
+                    .add(android.R.id.content, target)
                     .addToBackStack(null)
                     .commit();
         });
+    }
+
+    /** Shows the signed-in user's initial on the avatar, or the person icon for guests. */
+    private void updateAvatar(ImageButton btnAvatar) {
+        UserModel user = authViewModel.getCurrentUser();
+        if (user == null) {
+            btnAvatar.setImageResource(R.drawable.ic_person);
+            tvAvatarInitial.setVisibility(View.GONE);
+        } else {
+            btnAvatar.setImageDrawable(null);
+            tvAvatarInitial.setText(AccountFragment.initialOf(user));
+            tvAvatarInitial.setVisibility(View.VISIBLE);
+        }
     }
 
     private void showAddWalletDialog() {
