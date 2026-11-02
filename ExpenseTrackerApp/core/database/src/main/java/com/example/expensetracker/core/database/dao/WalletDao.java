@@ -55,4 +55,8 @@ public interface WalletDao {
 
     @Query("DELETE FROM wallet_table WHERE deleted = 1 AND syncStatus = 'SYNCED'")
     void purgeSyncedDeletes();
+
+    // updatedAt = 0 marks an untouched default row: nothing to lose.
+    @Query("SELECT COUNT(*) FROM wallet_table WHERE syncStatus = 'PENDING' AND updatedAt > 0")
+    int countPendingChanges();
 }

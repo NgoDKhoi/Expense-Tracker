@@ -105,6 +105,7 @@ public class SyncDataUseCaseTest {
         order.verify(local).markSynced(Table.TRANSACTIONS, "t1", 20);
         order.verify(local).purgeSyncedDeletes();
         order.verify(remote).pullWallets(eq("tok"), anyLong(), anyInt());
+        order.verify(local).setLastSyncedAt(anyLong());
         // Nothing pending there: no request at all.
         verify(remote, never()).pushCategories(anyString(), any());
     }
@@ -119,6 +120,7 @@ public class SyncDataUseCaseTest {
         verify(local, never()).markSynced(any(), anyString(), anyLong());
         verify(remote, never()).pushCategories(anyString(), any());
         verify(remote, never()).pullWallets(anyString(), anyLong(), anyInt());
+        verify(local, never()).setLastSyncedAt(anyLong());
     }
 
     @Test

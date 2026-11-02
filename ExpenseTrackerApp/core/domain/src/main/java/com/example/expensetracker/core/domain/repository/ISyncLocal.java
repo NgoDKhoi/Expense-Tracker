@@ -32,4 +32,16 @@ public interface ISyncLocal {
     /** Server time (epoch millis) of the newest row pulled so far; 0 before the first pull. */
     long getCursor(Table table);
     void setCursor(Table table, long syncedAtMillis);
+
+    /** Live transactions never synced to any account, e.g. made while signed out. */
+    int countUnsyncedTransactions();
+    /** Rows with local changes the server doesn't have yet. Untouched default rows don't count. */
+    int countPendingChanges();
+
+    /** Epoch millis of the last successful sync; 0 if never. */
+    long getLastSyncedAt();
+    void setLastSyncedAt(long millis);
+
+    /** Wipes the user's data on this device (rows, cursors, receipt photos) and re-creates the defaults. */
+    void clearAll();
 }

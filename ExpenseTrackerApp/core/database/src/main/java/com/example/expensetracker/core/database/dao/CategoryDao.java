@@ -48,4 +48,8 @@ public interface CategoryDao {
 
     @Query("DELETE FROM categories WHERE deleted = 1 AND syncStatus = 'SYNCED'")
     void purgeSyncedDeletes();
+
+    // updatedAt = 0 marks an untouched default row: nothing to lose.
+    @Query("SELECT COUNT(*) FROM categories WHERE syncStatus = 'PENDING' AND updatedAt > 0")
+    int countPendingChanges();
 }

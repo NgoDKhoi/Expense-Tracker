@@ -72,7 +72,13 @@ public class SyncDataUseCase {
                 m -> m.getUuid(), m -> m.getUpdatedAt());
         if (!r.isSuccess()) return r;
         local.purgeSyncedDeletes();
+        local.setLastSyncedAt(System.currentTimeMillis());
         return Result.success(null);
+    }
+
+    /** Wipes local data. Shares the sync lock, so it never runs in the middle of a sync. */
+    public synchronized void clearLocalData() {
+        local.clearAll();
     }
 
     private <T> Result<Void> push(String token, Table table, List<T> rows, Push<T> send,

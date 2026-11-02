@@ -139,6 +139,17 @@ public abstract class ExpenseDatabase extends RoomDatabase {
         return INSTANCE;
     }
 
+    /** Deletes every row and seeds the defaults again (sign out, or dropping a guest's data). */
+    public void clearAndSeedDefaults() {
+        runInTransaction(() -> {
+            SupportSQLiteDatabase db = getOpenHelper().getWritableDatabase();
+            db.execSQL("DELETE FROM transactions");
+            db.execSQL("DELETE FROM wallet_table");
+            db.execSQL("DELETE FROM categories");
+            seedDefaults(db);
+        });
+    }
+
     /**
      * Seeds default categories / wallet when the table has no visible rows. REPLACE revives a soft-deleted default.
      * updatedAt = 0: on a new device the account's own copy of these rows (if any) is newer and wins.

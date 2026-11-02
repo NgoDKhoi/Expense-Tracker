@@ -141,4 +141,26 @@ public class SyncLocalTest {
         }
         assertEquals(0, db.walletDao().findByUuid(ExpenseDatabase.DEFAULT_WALLET_UUID).getUpdatedAt());
     }
+
+    @Test
+    public void counts_ignoreUntouchedDefaults_andClearAllResetsDevice() {
+        ExpenseDatabase.seedDefaults(db.getOpenHelper().getWritableDatabase());
+        assertEquals(0, local.countPendingChanges());
+
+        WalletEntity w = addWallet("w1");
+        addTx("t1", w.getId());
+        assertEquals(2, local.countPendingChanges());
+        assertEquals(1, local.countUnsyncedTransactions());
+        local.setCursor(Table.WALLETS, 123);
+        local.setLastSyncedAt(456);
+
+        local.clearAll();
+
+        assertNull(db.transactionDao().findByUuid("t1"));
+        assertNull(db.walletDao().findByUuid("w1"));
+        assertEquals(0, db.walletDao().findByUuid(ExpenseDatabase.DEFAULT_WALLET_UUID).getUpdatedAt());
+        assertEquals(0, local.countPendingChanges());
+        assertEquals(0, local.getCursor(Table.WALLETS));
+        assertEquals(0, local.getLastSyncedAt());
+    }
 }

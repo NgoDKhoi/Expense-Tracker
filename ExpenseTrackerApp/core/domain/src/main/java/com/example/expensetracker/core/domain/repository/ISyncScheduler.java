@@ -4,4 +4,7 @@ package com.example.expensetracker.core.domain.repository;
 public interface ISyncScheduler {
     /** Sync soon (a few seconds, once online). Repeated calls are merged into one run. */
     void requestSync();
+
+    /** Cancel queued and periodic syncs (after sign out). */
+    void cancelAll();
 }

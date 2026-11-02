@@ -61,6 +61,27 @@
         android:textColor="@color/text_secondary"
         android:textSize="@dimen/text_size_body_small" />
 
+    <TextView
+        android:id="@+id/tv_sync_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="@dimen/spacing_m"
+        android:gravity="center"
+        android:lineSpacingExtra="4dp"
+        android:textColor="@color/text_primary"
+        android:textSize="@dimen/text_size_body_small" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_sync_now"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:minHeight="48dp"
+        android:text="@string/btn_sync_now"
+        android:textColor="@color/expense_orange" />
+
     <View
         android:layout_width="match_parent"
         android:layout_height="0dp"

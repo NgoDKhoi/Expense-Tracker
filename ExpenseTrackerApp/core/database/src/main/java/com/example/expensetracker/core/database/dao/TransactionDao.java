@@ -59,4 +59,11 @@ public interface TransactionDao {
 
     @Query("DELETE FROM transactions WHERE deleted = 1 AND syncStatus = 'SYNCED'")
     void purgeSyncedDeletes();
+
+    // Same JOIN as the push query, so counts match what sync can actually upload.
+    @Query("SELECT COUNT(*) FROM transactions t JOIN wallet_table w ON w.id = t.walletId WHERE t.syncStatus = 'PENDING'")
+    int countPendingChanges();
+
+    @Query("SELECT COUNT(*) FROM transactions t JOIN wallet_table w ON w.id = t.walletId WHERE t.syncStatus = 'PENDING' AND t.deleted = 0")
+    int countUnsynced();
 }

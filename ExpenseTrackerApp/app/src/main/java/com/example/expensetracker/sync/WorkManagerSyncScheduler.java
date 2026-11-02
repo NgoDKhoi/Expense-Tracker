@@ -47,6 +47,13 @@ public class WorkManagerSyncScheduler implements ISyncScheduler {
         WorkManager.getInstance(context).enqueueUniqueWork(ONE_OFF, ExistingWorkPolicy.REPLACE, request);
     }
 
+    @Override
+    public void cancelAll() {
+        WorkManager wm = WorkManager.getInstance(context);
+        wm.cancelUniqueWork(ONE_OFF);
+        wm.cancelUniqueWork(PERIODIC);
+    }
+
     /** Background sync every 6 hours while online. KEEP: calling it on every app start is fine. */
     public void schedulePeriodic() {
         PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(SyncWorker.class, 6, TimeUnit.HOURS)

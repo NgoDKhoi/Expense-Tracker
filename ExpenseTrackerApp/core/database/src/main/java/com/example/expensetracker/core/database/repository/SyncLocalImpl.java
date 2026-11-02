@@ -20,6 +20,7 @@ import com.example.expensetracker.core.domain.model.TransactionModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
 import com.example.expensetracker.core.domain.repository.ISyncLocal;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +32,11 @@ import javax.inject.Singleton;
 public class SyncLocalImpl implements ISyncLocal {
     private static final String TAG = "SyncLocalImpl";
     private static final String PREFS = "sync_state";
+    private static final String KEY_LAST_SYNCED_AT = "last_synced_at";
+    // Receipt photos are saved here by AddTransactionFragment; they are not backed up yet.
+    private static final String PHOTO_DIR = "expense_images";
+
+    private final Context context;
 
     private final ExpenseDatabase db;
     private final WalletDao walletDao;
@@ -40,6 +46,7 @@ public class SyncLocalImpl implements ISyncLocal {
 
     @Inject
     public SyncLocalImpl(Context context, ExpenseDatabase db) {
+        this.context = context;
         this.db = db;
         this.walletDao = db.walletDao();
         this.categoryDao = db.categoryDao();
@@ -157,5 +164,38 @@ public class SyncLocalImpl implements ISyncLocal {
     @Override
     public void setCursor(Table table, long syncedAtMillis) {
         prefs.edit().putLong(table.name(), syncedAtMillis).apply();
+    }
+
+    @Override
+    public int countUnsyncedTransactions() {
+        return transactionDao.countUnsynced();
+    }
+
+    @Override
+    public int countPendingChanges() {
+        return walletDao.countPendingChanges() + categoryDao.countPendingChanges() + transactionDao.countPendingChanges();
+    }
+
+    @Override
+    public long getLastSyncedAt() {
+        return prefs.getLong(KEY_LAST_SYNCED_AT, 0);
+    }
+
+    @Override
+    public void setLastSyncedAt(long millis) {
+        prefs.edit().putLong(KEY_LAST_SYNCED_AT, millis).apply();
+    }
+
+    @Override
+    public void clearAll() {
+        db.clearAndSeedDefaults();
+        // commit(): the cursors must be gone before the next sync pulls the new account's data.
+        prefs.edit().clear().commit();
+        File[] photos = new File(context.getFilesDir(), PHOTO_DIR).listFiles();
+        if (photos != null) {
+            for (File photo : photos) {
+                if (!photo.delete()) Log.w(TAG, "Could not delete " + photo.getName());
+            }
+        }
     }
 }

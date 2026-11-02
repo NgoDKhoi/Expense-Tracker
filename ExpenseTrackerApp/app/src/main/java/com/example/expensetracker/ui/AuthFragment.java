@@ -22,6 +22,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -129,8 +130,8 @@ public class AuthFragment extends BottomSheetDialogFragment {
                 Toast.makeText(requireContext(),
                         signUpMode ? R.string.msg_sign_up_success : R.string.msg_sign_in_success,
                         Toast.LENGTH_SHORT).show();
-                getParentFragmentManager().setFragmentResult(RESULT_AUTH_CHANGED, Bundle.EMPTY);
-                close();
+                int onDevice = viewModel.getUnsyncedOnSignIn();
+                if (onDevice > 0) askMergeLocalData(onDevice); else finishAuth();
             } else if (result.isError()) {
                 showError(result.getMessage());
             }
@@ -214,6 +215,28 @@ public class AuthFragment extends BottomSheetDialogFragment {
 
     private void close() {
         dismiss();
+    }
+
+    /** Expenses made before signing in: add them to the account, or drop them and download the account's data. */
+    private void askMergeLocalData(int count) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.dialog_merge_title, count))
+                .setMessage(R.string.dialog_merge_message)
+                .setCancelable(false)
+                .setPositiveButton(R.string.action_merge, (d, w) -> {
+                    viewModel.mergeLocalData();
+                    finishAuth();
+                })
+                .setNegativeButton(R.string.action_discard_local, (d, w) -> {
+                    viewModel.discardLocalData();
+                    finishAuth();
+                })
+                .show();
+    }
+
+    private void finishAuth() {
+        getParentFragmentManager().setFragmentResult(RESULT_AUTH_CHANGED, Bundle.EMPTY);
+        close();
     }
 
     private static String text(TextInputEditText editText) {
