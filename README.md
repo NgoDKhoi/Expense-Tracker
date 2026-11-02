@@ -59,6 +59,28 @@ Kiến trúc áp dụng **Repository Pattern** để tạo ra một Single Sourc
 - **History**: Màn hình `PhotosFragment` hiển thị danh sách dạng lưới (grid) các ảnh hóa đơn/vật phẩm đã chi.
 - **AI Assistant**: Giao diện thẻ thông tin (CardView) hoặc chat nhỏ gọn, nơi hiển thị các insight về tài chính được AI sinh ra sau khi phân tích data json của người dùng.
 
+## 🔑 Cấu hình Supabase (Đăng nhập / Đăng ký)
+
+Tài khoản người dùng dùng **Supabase Auth**, gọi qua REST API bằng Retrofit (module `:core:network`). Đăng nhập là **không bắt buộc**: app vẫn dùng offline bình thường, nút avatar góc phải màn hình Camera dùng để đăng nhập hoặc xem tài khoản.
+
+**Thiết lập một lần cho project Supabase (chỉ người quản lý project làm):**
+1. Tạo project trên [supabase.com](https://supabase.com).
+2. Vào **Authentication → Sign In / Providers → Email**, tắt **Confirm email**, rồi bấm Save.
+3. (Tuỳ chọn) Vào **Authentication → URL Configuration**, đặt **Site URL**. Đây là trang mở ra khi bấm link trong email "Quên mật khẩu".
+
+**Mỗi thành viên tự làm trên máy mình:**
+1. Lấy **Project URL**: bấm nút **Connect** trên dashboard (hoặc **Settings → Data API**). URL có dạng `https://<project-ref>.supabase.co`, với `<project-ref>` là đoạn sau `/project/` trên thanh địa chỉ. Lấy key: vào **Settings → API Keys**, copy **Publishable key** (`sb_publishable_...`).
+2. Thêm 2 dòng sau vào `ExpenseTrackerApp/local.properties`. File này đã được gitignore nên key không bị đẩy lên GitHub.
+   ```properties
+   SUPABASE_URL=https://xxxxxxxx.supabase.co
+   SUPABASE_ANON_KEY=eyJhbGciOi...   # hoặc sb_publishable_...
+   ```
+3. Bấm **Sync Project with Gradle Files** rồi chạy lại app.
+
+Nếu thiếu 2 dòng trên, app vẫn chạy nhưng khi đăng nhập sẽ báo *"Chưa cấu hình Supabase"*.
+
+> Không bao giờ dùng **service_role / secret key** trong app. Key đó có toàn quyền với database.
+
 ## 🚀 Kế hoạch phát triển (Development Phases)
 
 Dự án được triển khai qua 5 giai đoạn:
