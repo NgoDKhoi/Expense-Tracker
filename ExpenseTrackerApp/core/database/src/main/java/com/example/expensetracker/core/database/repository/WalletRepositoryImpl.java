@@ -8,6 +8,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Transformations;
 
 import com.example.expensetracker.core.database.dao.WalletDao;
+import com.example.expensetracker.core.database.entity.WalletEntity;
 import com.example.expensetracker.core.database.mapper.EntityMapper;
 import com.example.expensetracker.core.domain.model.WalletModel;
 import com.example.expensetracker.core.domain.repository.IWalletRepository;
@@ -30,7 +31,9 @@ public class WalletRepositoryImpl implements IWalletRepository {
     public void insertWallet(WalletModel wallet) {
         executorService.execute(() -> {
             try {
-                walletDao.insertWallet(EntityMapper.toEntity(wallet));
+                WalletEntity entity = EntityMapper.toEntity(wallet);
+                entity.markDirty();
+                walletDao.insertWallet(entity);
             } catch (Exception e) {
                 Log.e(TAG, "Error inserting wallet", e);
             }
@@ -41,7 +44,9 @@ public class WalletRepositoryImpl implements IWalletRepository {
     public void updateWallet(WalletModel wallet) {
         executorService.execute(() -> {
             try {
-                walletDao.updateWallet(EntityMapper.toEntity(wallet));
+                WalletEntity entity = EntityMapper.toEntity(wallet);
+                entity.markDirty();
+                walletDao.updateWallet(entity);
             } catch (Exception e) {
                 Log.e(TAG, "Error updating wallet", e);
             }
@@ -52,7 +57,7 @@ public class WalletRepositoryImpl implements IWalletRepository {
     public void deleteWallet(long id) {
         executorService.execute(() -> {
             try {
-                walletDao.deleteWallet(id);
+                walletDao.deleteWallet(id, System.currentTimeMillis());
             } catch (Exception e) {
                 Log.e(TAG, "Error deleting wallet", e);
             }
@@ -72,16 +77,5 @@ public class WalletRepositoryImpl implements IWalletRepository {
             Log.e(TAG, "Error getting wallet by id", e);
             return null;
         }
-    }
-
-    @Override
-    public void updateBalance(long walletId, double amountChange) {
-        executorService.execute(() -> {
-            try {
-                walletDao.updateBalance(walletId, amountChange);
-            } catch (Exception e) {
-                Log.e(TAG, "Error updating balance", e);
-            }
-        });
     }
 }

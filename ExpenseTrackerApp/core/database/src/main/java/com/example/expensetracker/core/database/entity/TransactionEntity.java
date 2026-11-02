@@ -1,12 +1,16 @@
 package com.example.expensetracker.core.database.entity;
 
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 import java.util.Date;
 
-@Entity(tableName = "transactions")
-public class TransactionEntity {
+@Entity(tableName = "transactions", indices = {
+        @Index(value = "uuid", unique = true),
+        @Index("timestamp"),
+        @Index("walletId")})
+public class TransactionEntity extends SyncableEntity {
     @PrimaryKey(autoGenerate = true)
     private long id;
     private double amount;
@@ -14,7 +18,6 @@ public class TransactionEntity {
     private String category;
     private String imageUri;
     private Date timestamp;
-    private SyncStatus syncStatus = SyncStatus.PENDING;
     private String note;
     private long walletId;
     private TransactionType type = TransactionType.EXPENSE;
@@ -36,9 +39,6 @@ public class TransactionEntity {
     
     public Date getTimestamp() { return timestamp; }
     public void setTimestamp(Date timestamp) { this.timestamp = timestamp; }
-    
-    public SyncStatus getSyncStatus() { return syncStatus; }
-    public void setSyncStatus(SyncStatus syncStatus) { this.syncStatus = syncStatus; }
     
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }

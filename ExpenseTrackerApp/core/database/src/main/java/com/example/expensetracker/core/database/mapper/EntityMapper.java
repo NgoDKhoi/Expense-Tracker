@@ -6,6 +6,7 @@ import com.example.expensetracker.core.database.entity.TransactionEntity;
 import com.example.expensetracker.core.database.entity.SyncStatus;
 import com.example.expensetracker.core.database.entity.TransactionType;
 import com.example.expensetracker.core.database.entity.WalletEntity;
+import com.example.expensetracker.core.database.entity.WalletWithBalance;
 import com.example.expensetracker.core.domain.model.CategoryModel;
 import com.example.expensetracker.core.domain.model.CategoryTotalModel;
 import com.example.expensetracker.core.domain.model.TransactionModel;
@@ -20,6 +21,7 @@ public class EntityMapper {
         if (entity == null) return null;
         TransactionModel model = new TransactionModel();
         model.setId(entity.getId());
+        model.setUuid(entity.getUuid());
         model.setAmount(entity.getAmount());
         model.setTitle(entity.getTitle());
         model.setCategory(entity.getCategory());
@@ -36,6 +38,7 @@ public class EntityMapper {
         if (model == null) return null;
         TransactionEntity entity = new TransactionEntity();
         entity.setId(model.getId());
+        entity.setUuid(model.getUuid());
         entity.setAmount(model.getAmount());
         entity.setTitle(model.getTitle());
         entity.setCategory(model.getCategory());
@@ -60,12 +63,15 @@ public class EntityMapper {
         return entity;
     }
 
-    public static WalletModel toModel(WalletEntity entity) {
-        if (entity == null) return null;
+    public static WalletModel toModel(WalletWithBalance row) {
+        if (row == null) return null;
+        WalletEntity entity = row.getWallet();
         WalletModel model = new WalletModel();
         model.setId(entity.getId());
+        model.setUuid(entity.getUuid());
         model.setName(entity.getName());
-        model.setBalance(entity.getBalance());
+        model.setInitialBalance(entity.getInitialBalance());
+        model.setBalance(row.getBalance());
         model.setColorHex(entity.getColorHex());
         model.setIconName(entity.getIconName());
         return model;
@@ -75,8 +81,9 @@ public class EntityMapper {
         if (model == null) return null;
         WalletEntity entity = new WalletEntity();
         entity.setId(model.getId());
+        entity.setUuid(model.getUuid());
         entity.setName(model.getName());
-        entity.setBalance(model.getBalance());
+        entity.setInitialBalance(model.getInitialBalance());
         entity.setColorHex(model.getColorHex());
         entity.setIconName(model.getIconName());
         return entity;
@@ -99,10 +106,10 @@ public class EntityMapper {
         return models;
     }
 
-    public static List<WalletModel> toWalletModelList(List<WalletEntity> entities) {
+    public static List<WalletModel> toWalletModelList(List<WalletWithBalance> entities) {
         if (entities == null) return null;
         List<WalletModel> models = new ArrayList<>();
-        for (WalletEntity entity : entities) {
+        for (WalletWithBalance entity : entities) {
             models.add(toModel(entity));
         }
         return models;
@@ -121,6 +128,7 @@ public class EntityMapper {
         if (entity == null) return null;
         CategoryModel model = new CategoryModel();
         model.setId(entity.getId());
+        model.setUuid(entity.getUuid());
         model.setName(entity.getName());
         model.setType(entity.getType());
         model.setColorHex(entity.getColorHex());
@@ -132,6 +140,7 @@ public class EntityMapper {
         if (model == null) return null;
         CategoryEntity entity = new CategoryEntity();
         entity.setId(model.getId());
+        entity.setUuid(model.getUuid());
         entity.setName(model.getName());
         entity.setType(model.getType());
         entity.setColorHex(model.getColorHex());

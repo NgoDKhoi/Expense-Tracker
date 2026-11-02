@@ -42,11 +42,7 @@ public class AddTransactionUseCaseTest {
         assertTrue(result.isSuccess());
         
         ArgumentCaptor<TransactionModel> txCaptor = ArgumentCaptor.forClass(TransactionModel.class);
-        ArgumentCaptor<Double> amountCaptor = ArgumentCaptor.forClass(Double.class);
-        
-        verify(mockRepository).insertExpenseAndUpdateWallet(txCaptor.capture(), amountCaptor.capture());
-        
+        verify(mockRepository).insertExpense(txCaptor.capture());
         assertEquals(150.0, txCaptor.getValue().getAmount(), 0.001);
-        assertEquals(-150.0, amountCaptor.getValue(), 0.001);
     }
 }

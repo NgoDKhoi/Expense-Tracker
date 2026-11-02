@@ -13,7 +13,6 @@ import androidx.lifecycle.ViewModel;
 import com.example.expensetracker.core.domain.model.CategoryTotalModel;
 import com.example.expensetracker.core.domain.model.TransactionModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
-import com.example.expensetracker.core.domain.usecase.AddTransactionUseCase;
 import com.example.expensetracker.core.domain.usecase.DeleteTransactionUseCase;
 import com.example.expensetracker.core.domain.usecase.DeleteWalletUseCase;
 import com.example.expensetracker.core.domain.usecase.GetAllTransactionsUseCase;
@@ -48,7 +47,6 @@ public class HomeViewModel extends ViewModel {
     private final UpdateWalletUseCase updateWalletUseCase;
     private final DeleteWalletUseCase deleteWalletUseCase;
     private final DeleteTransactionUseCase deleteTransactionUseCase;
-    private final AddTransactionUseCase addTransactionUseCase;
 
     private final LiveData<List<TransactionModel>> recentExpenses;
     private final LiveData<List<WalletModel>> wallets;
@@ -69,8 +67,7 @@ public class HomeViewModel extends ViewModel {
             InsertWalletUseCase insertWalletUseCase,
             UpdateWalletUseCase updateWalletUseCase,
             DeleteWalletUseCase deleteWalletUseCase,
-            DeleteTransactionUseCase deleteTransactionUseCase,
-            AddTransactionUseCase addTransactionUseCase) {
+            DeleteTransactionUseCase deleteTransactionUseCase) {
 
         Log.d(TAG, "HomeViewModel created with injected use cases.");
 
@@ -84,7 +81,6 @@ public class HomeViewModel extends ViewModel {
         this.updateWalletUseCase = updateWalletUseCase;
         this.deleteWalletUseCase = deleteWalletUseCase;
         this.deleteTransactionUseCase = deleteTransactionUseCase;
-        this.addTransactionUseCase = addTransactionUseCase;
 
         recentExpenses = getRecentTransactionsUseCase.execute(5);
         wallets = getAllWalletsUseCase.execute();
@@ -184,7 +180,7 @@ public class HomeViewModel extends ViewModel {
         Log.d(TAG, "insertWallet: name=" + name + ", balance=" + initialBalance);
         WalletModel wallet = new WalletModel();
         wallet.setName(name);
-        wallet.setBalance(initialBalance);
+        wallet.setInitialBalance(initialBalance);
         wallet.setColorHex(colorHex);
         wallet.setIconName(iconName);
         insertWalletUseCase.execute(wallet);
@@ -203,6 +199,6 @@ public class HomeViewModel extends ViewModel {
     }
 
     public void undoDeleteTransaction(TransactionModel transaction) {
-        addTransactionUseCase.execute(transaction);
+        deleteTransactionUseCase.undo(transaction);
     }
 }

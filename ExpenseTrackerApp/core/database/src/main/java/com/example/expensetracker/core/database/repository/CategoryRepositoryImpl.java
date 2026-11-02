@@ -6,6 +6,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Transformations;
 
 import com.example.expensetracker.core.database.dao.CategoryDao;
+import com.example.expensetracker.core.database.entity.CategoryEntity;
 import com.example.expensetracker.core.database.mapper.EntityMapper;
 import com.example.expensetracker.core.domain.model.CategoryModel;
 import com.example.expensetracker.core.domain.repository.ICategoryRepository;
@@ -41,7 +42,9 @@ public class CategoryRepositoryImpl implements ICategoryRepository {
     public void insertCategory(CategoryModel category) {
         executorService.execute(() -> {
             try {
-                categoryDao.insertCategory(EntityMapper.toEntity(category));
+                CategoryEntity entity = EntityMapper.toEntity(category);
+                entity.markDirty();
+                categoryDao.insertCategory(entity);
             } catch (Exception e) {
                 Log.e(TAG, "Error inserting category", e);
             }
@@ -52,7 +55,7 @@ public class CategoryRepositoryImpl implements ICategoryRepository {
     public void deleteCategory(long categoryId) {
         executorService.execute(() -> {
             try {
-                categoryDao.deleteCategory(categoryId);
+                categoryDao.deleteCategory(categoryId, System.currentTimeMillis());
             } catch (Exception e) {
                 Log.e(TAG, "Error deleting category", e);
             }

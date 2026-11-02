@@ -194,7 +194,8 @@ public class WalletsFragment extends Fragment {
 
             if (isEditing) {
                 walletToEdit.setName(name);
-                walletToEdit.setBalance(balance);
+                // The user types the balance they see now; shift initialBalance so the computed balance matches it.
+                walletToEdit.setInitialBalance(walletToEdit.getInitialBalance() + balance - walletToEdit.getBalance());
                 walletToEdit.setColorHex(selectedColor[0]);
                 updateWalletUseCase.execute(walletToEdit);
                 Toast.makeText(requireContext(), "Đã cập nhật: " + name, Toast.LENGTH_SHORT).show();

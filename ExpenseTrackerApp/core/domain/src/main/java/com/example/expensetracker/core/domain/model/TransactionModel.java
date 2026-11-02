@@ -4,6 +4,7 @@ import java.util.Date;
 
 public class TransactionModel {
     private long id;
+    private String uuid;
     private double amount;
     private String title;
     private String category;
@@ -32,6 +33,9 @@ public class TransactionModel {
 
     public long getId() { return id; }
     public void setId(long id) { this.id = id; }
+
+    public String getUuid() { return uuid; }
+    public void setUuid(String uuid) { this.uuid = uuid; }
 
     public double getAmount() { return amount; }
     public void setAmount(double amount) { this.amount = amount; }

@@ -2,7 +2,6 @@ package com.example.expensetracker.core.database.dao;
 
 import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
-import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
 
@@ -16,27 +15,28 @@ public interface TransactionDao {
     @Insert
     void insertExpense(TransactionEntity expense);
 
-    @Query("SELECT * FROM transactions ORDER BY timestamp DESC")
+    @Query("SELECT * FROM transactions WHERE deleted = 0 ORDER BY timestamp DESC")
     LiveData<List<TransactionEntity>> getAllExpenses();
 
-    @Query("SELECT * FROM transactions ORDER BY timestamp DESC LIMIT :limit")
+    @Query("SELECT * FROM transactions WHERE deleted = 0 ORDER BY timestamp DESC LIMIT :limit")
     LiveData<List<TransactionEntity>> getRecentExpenses(int limit);
 
     @Query("SELECT * FROM transactions WHERE syncStatus = 'PENDING'")
     List<TransactionEntity> getPendingExpenses();
 
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'EXPENSE' AND timestamp BETWEEN :start AND :end")
+    @Query("SELECT SUM(amount) FROM transactions WHERE deleted = 0 AND type = 'EXPENSE' AND timestamp BETWEEN :start AND :end")
     LiveData<Double> getTotalExpense(long start, long end);
 
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'INCOME' AND timestamp BETWEEN :start AND :end")
+    @Query("SELECT SUM(amount) FROM transactions WHERE deleted = 0 AND type = 'INCOME' AND timestamp BETWEEN :start AND :end")
     LiveData<Double> getTotalIncome(long start, long end);
 
     @Query("UPDATE transactions SET syncStatus = :status WHERE id = :id")
     void updateSyncStatus(long id, String status);
 
-    @Delete
-    void deleteExpense(TransactionEntity expense);
+    /** Soft delete (deleted = true) or undo (deleted = false); the row is kept so the change can sync. */
+    @Query("UPDATE transactions SET deleted = :deleted, updatedAt = :now, syncStatus = 'PENDING' WHERE id = :id")
+    void setDeleted(long id, boolean deleted, long now);
 
-    @Query("SELECT category, SUM(amount) as total FROM transactions WHERE type = 'EXPENSE' AND timestamp BETWEEN :start AND :end GROUP BY category")
+    @Query("SELECT category, SUM(amount) as total FROM transactions WHERE deleted = 0 AND type = 'EXPENSE' AND timestamp BETWEEN :start AND :end GROUP BY category")
     LiveData<List<CategoryTotal>> getCategoryTotals(long start, long end);
 }

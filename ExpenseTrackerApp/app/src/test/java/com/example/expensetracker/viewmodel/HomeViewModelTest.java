@@ -6,7 +6,6 @@ import androidx.lifecycle.MutableLiveData;
 import com.example.expensetracker.core.domain.model.CategoryTotalModel;
 import com.example.expensetracker.core.domain.model.TransactionModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
-import com.example.expensetracker.core.domain.usecase.AddTransactionUseCase;
 import com.example.expensetracker.core.domain.usecase.DeleteTransactionUseCase;
 import com.example.expensetracker.core.domain.usecase.DeleteWalletUseCase;
 import com.example.expensetracker.core.domain.usecase.GetAllTransactionsUseCase;
@@ -46,7 +45,6 @@ public class HomeViewModelTest {
     @Mock private UpdateWalletUseCase updateWalletUseCase;
     @Mock private DeleteWalletUseCase deleteWalletUseCase;
     @Mock private DeleteTransactionUseCase deleteTransactionUseCase;
-    @Mock private AddTransactionUseCase addTransactionUseCase;
 
     private HomeViewModel viewModel;
 
@@ -72,8 +70,7 @@ public class HomeViewModelTest {
                 insertWalletUseCase,
                 updateWalletUseCase,
                 deleteWalletUseCase,
-                deleteTransactionUseCase,
-                addTransactionUseCase
+                deleteTransactionUseCase
         );
     }
 
@@ -100,6 +97,6 @@ public class HomeViewModelTest {
     public void testUndoDeleteTransaction_CallsUseCase() {
         TransactionModel tx = new TransactionModel();
         viewModel.undoDeleteTransaction(tx);
-        verify(addTransactionUseCase).execute(tx);
+        verify(deleteTransactionUseCase).undo(tx);
     }
 }

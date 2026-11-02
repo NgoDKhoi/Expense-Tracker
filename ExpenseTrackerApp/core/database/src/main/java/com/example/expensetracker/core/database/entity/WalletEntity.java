@@ -1,14 +1,16 @@
 package com.example.expensetracker.core.database.entity;
 
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "wallet_table")
-public class WalletEntity {
+@Entity(tableName = "wallet_table", indices = {@Index(value = "uuid", unique = true)})
+public class WalletEntity extends SyncableEntity {
     @PrimaryKey(autoGenerate = true)
     private long id;
     private String name;
-    private double balance;
+    // Current balance = initialBalance + income - expense of live transactions (see WalletDao).
+    private double initialBalance;
     private String colorHex;
     private String iconName;
 
@@ -18,8 +20,8 @@ public class WalletEntity {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
-    public double getBalance() { return balance; }
-    public void setBalance(double balance) { this.balance = balance; }
+    public double getInitialBalance() { return initialBalance; }
+    public void setInitialBalance(double initialBalance) { this.initialBalance = initialBalance; }
 
     public String getColorHex() { return colorHex; }
     public void setColorHex(String colorHex) { this.colorHex = colorHex; }

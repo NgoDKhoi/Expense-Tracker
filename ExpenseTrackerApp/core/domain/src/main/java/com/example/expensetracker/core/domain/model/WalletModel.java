@@ -2,7 +2,10 @@ package com.example.expensetracker.core.domain.model;
 
 public class WalletModel {
     private long id;
+    private String uuid;
     private String name;
+    private double initialBalance;
+    // Computed by the database from transactions; read-only for callers.
     private double balance;
     private String colorHex;
     private String iconName;
@@ -10,14 +13,16 @@ public class WalletModel {
     public WalletModel() {
     }
 
-    public WalletModel(long id, String name, double balance) {
-        this(id, name, balance, "#FF5722", "account_balance_wallet");
+    public WalletModel(long id, String name, double initialBalance) {
+        this(id, name, initialBalance, "#FF5722", "account_balance_wallet");
     }
 
-    public WalletModel(long id, String name, double balance, String colorHex, String iconName) {
+    /** For a new wallet: it has no transactions yet, so balance == initialBalance. */
+    public WalletModel(long id, String name, double initialBalance, String colorHex, String iconName) {
         this.id = id;
         this.name = name;
-        this.balance = balance;
+        this.initialBalance = initialBalance;
+        this.balance = initialBalance;
         this.colorHex = colorHex != null ? colorHex : "#FF5722";
         this.iconName = iconName != null ? iconName : "account_balance_wallet";
     }
@@ -25,8 +30,14 @@ public class WalletModel {
     public long getId() { return id; }
     public void setId(long id) { this.id = id; }
 
+    public String getUuid() { return uuid; }
+    public void setUuid(String uuid) { this.uuid = uuid; }
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+
+    public double getInitialBalance() { return initialBalance; }
+    public void setInitialBalance(double initialBalance) { this.initialBalance = initialBalance; }
 
     public double getBalance() { return balance; }
     public void setBalance(double balance) { this.balance = balance; }

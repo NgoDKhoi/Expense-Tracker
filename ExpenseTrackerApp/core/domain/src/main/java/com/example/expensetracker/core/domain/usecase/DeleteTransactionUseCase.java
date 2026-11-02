@@ -22,5 +22,15 @@ public class DeleteTransactionUseCase {
             return Result.error(e.getMessage(), e);
         }
     }
+
+    /** Undo a delete: the row was only soft-deleted, so bring it back instead of inserting a copy. */
+    public Result<Void> undo(TransactionModel expense) {
+        try {
+            repository.restoreExpense(expense);
+            return Result.success(null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage(), e);
+        }
+    }
 }
 

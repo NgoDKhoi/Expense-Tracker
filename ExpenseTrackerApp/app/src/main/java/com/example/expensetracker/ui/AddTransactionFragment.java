@@ -269,7 +269,7 @@ public class AddTransactionFragment extends Fragment {
                 double balance = Double.parseDouble(balanceStr);
                 WalletModel wallet = new WalletModel();
                 wallet.setName(name);
-                wallet.setBalance(balance);
+                wallet.setInitialBalance(balance);
                 insertWalletUseCase.execute(wallet);
             } catch (NumberFormatException e) {
                 Toast.makeText(requireContext(), "Invalid balance", Toast.LENGTH_SHORT).show();

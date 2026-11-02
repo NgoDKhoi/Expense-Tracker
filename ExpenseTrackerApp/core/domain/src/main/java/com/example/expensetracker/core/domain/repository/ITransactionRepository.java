@@ -7,7 +7,6 @@ import java.util.List;
 
 public interface ITransactionRepository {
     void insertExpense(TransactionModel expense);
-    void insertExpenseAndUpdateWallet(TransactionModel expense, double amountChange);
     LiveData<List<TransactionModel>> getAllExpenses();
     LiveData<List<TransactionModel>> getRecentExpenses(int limit);
     List<TransactionModel> getPendingExpenses();
@@ -16,4 +15,5 @@ public interface ITransactionRepository {
     void updateSyncStatus(long id, String status);
     LiveData<List<CategoryTotalModel>> getCategoryTotals(long start, long end);
     void deleteExpense(TransactionModel expense);
+    void restoreExpense(TransactionModel expense);
 }

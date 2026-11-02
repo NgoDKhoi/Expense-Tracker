@@ -8,7 +8,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Transformations;
 
 import com.example.expensetracker.core.database.dao.TransactionDao;
-import com.example.expensetracker.core.database.dao.WalletDao;
+import com.example.expensetracker.core.database.entity.TransactionEntity;
 import com.example.expensetracker.core.database.mapper.EntityMapper;
 import com.example.expensetracker.core.domain.model.CategoryTotalModel;
 import com.example.expensetracker.core.domain.model.TransactionModel;
@@ -20,13 +20,11 @@ import java.util.concurrent.ExecutorService;
 public class TransactionRepositoryImpl implements ITransactionRepository {
     private static final String TAG = "TransactionRepositoryImpl";
     private final TransactionDao transactionDao;
-    private final WalletDao walletDao;
     private final ExecutorService executorService;
 
     @Inject
-    public TransactionRepositoryImpl(TransactionDao transactionDao, WalletDao walletDao, ExecutorService executorService) {
+    public TransactionRepositoryImpl(TransactionDao transactionDao, ExecutorService executorService) {
         this.transactionDao = transactionDao;
-        this.walletDao = walletDao;
         this.executorService = executorService;
     }
 
@@ -34,7 +32,9 @@ public class TransactionRepositoryImpl implements ITransactionRepository {
     public void insertExpense(TransactionModel expense) {
         executorService.execute(() -> {
             try {
-                transactionDao.insertExpense(EntityMapper.toEntity(expense));
+                TransactionEntity entity = EntityMapper.toEntity(expense);
+                entity.markDirty();
+                transactionDao.insertExpense(entity);
             } catch (Exception e) {
                 Log.d(TAG, "Error inserting expense", e);
             }
@@ -86,7 +86,7 @@ public class TransactionRepositoryImpl implements ITransactionRepository {
     public void deleteExpense(TransactionModel expense) {
         executorService.execute(() -> {
             try {
-                transactionDao.deleteExpense(EntityMapper.toEntity(expense));
+                transactionDao.setDeleted(expense.getId(), true, System.currentTimeMillis());
             } catch (Exception e) {
                 Log.d(TAG, "Error deleting expense", e);
             }
@@ -94,20 +94,19 @@ public class TransactionRepositoryImpl implements ITransactionRepository {
     }
 
     @Override
-    public LiveData<List<CategoryTotalModel>> getCategoryTotals(long start, long end) {
-        return Transformations.map(transactionDao.getCategoryTotals(start, end), EntityMapper::toCategoryTotalModelList);
+    public void restoreExpense(TransactionModel expense) {
+        executorService.execute(() -> {
+            try {
+                transactionDao.setDeleted(expense.getId(), false, System.currentTimeMillis());
+            } catch (Exception e) {
+                Log.d(TAG, "Error restoring expense", e);
+            }
+        });
     }
 
     @Override
-    public void insertExpenseAndUpdateWallet(TransactionModel expense, double amountChange) {
-        executorService.execute(() -> {
-            try {
-                transactionDao.insertExpense(EntityMapper.toEntity(expense));
-                walletDao.updateBalance(expense.getWalletId(), amountChange);
-            } catch (Exception e) {
-                Log.d(TAG, "Error inserting expense and updating wallet", e);
-            }
-        });
+    public LiveData<List<CategoryTotalModel>> getCategoryTotals(long start, long end) {
+        return Transformations.map(transactionDao.getCategoryTotals(start, end), EntityMapper::toCategoryTotalModelList);
     }
 }
 

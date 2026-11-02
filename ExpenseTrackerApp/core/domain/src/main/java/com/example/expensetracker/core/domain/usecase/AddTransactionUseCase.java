@@ -7,8 +7,7 @@ import com.example.expensetracker.core.domain.model.TransactionModel;
 import com.example.expensetracker.core.domain.repository.ITransactionRepository;
 
 /**
- * Use case for adding an expense and updating the associated wallet balance.
- * Encapsulates the business logic of determining amount change based on transaction type.
+ * Use case for adding an expense. Wallet balances are computed from transactions, so nothing else to update.
  */
 public class AddTransactionUseCase {
     private final ITransactionRepository repository;
@@ -18,16 +17,9 @@ public class AddTransactionUseCase {
         this.repository = repository;
     }
 
-    /**
-     * Executes the use case: inserts an expense record and updates the wallet balance.
-     * For INCOME type, the wallet balance increases; for EXPENSE type, it decreases.
-     */
     public Result<Void> execute(TransactionModel expense) {
         try {
-            double amountChange = "INCOME".equals(expense.getType())
-                    ? expense.getAmount()
-                    : -expense.getAmount();
-            repository.insertExpenseAndUpdateWallet(expense, amountChange);
+            repository.insertExpense(expense);
             return Result.success(null);
         } catch (Exception e) {
             return Result.error(e.getMessage(), e);

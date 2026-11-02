@@ -1,10 +1,11 @@
 package com.example.expensetracker.core.database.entity;
 
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "categories")
-public class CategoryEntity {
+@Entity(tableName = "categories", indices = {@Index(value = "uuid", unique = true)})
+public class CategoryEntity extends SyncableEntity {
 
     @PrimaryKey(autoGenerate = true)
     private long id;

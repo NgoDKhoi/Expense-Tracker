@@ -10,5 +10,4 @@ public interface IWalletRepository {
     void updateWallet(WalletModel wallet);
     void deleteWallet(long id);
     WalletModel getWalletById(long id);
-    void updateBalance(long walletId, double amountChange);
 }
