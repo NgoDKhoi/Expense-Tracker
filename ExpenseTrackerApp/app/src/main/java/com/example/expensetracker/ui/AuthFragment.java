@@ -1,6 +1,7 @@
 package com.example.expensetracker.ui;
 
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,8 +36,11 @@ public class AuthFragment extends Fragment {
     private boolean signUpMode = false;
 
     private TextInputLayout tilName;
+    private TextInputLayout tilUsername;
+    private TextInputLayout tilEmail;
     private TextInputLayout tilConfirm;
     private TextInputEditText etName;
+    private TextInputEditText etUsername;
     private TextInputEditText etEmail;
     private TextInputEditText etPassword;
     private TextInputEditText etConfirm;
@@ -57,8 +61,11 @@ public class AuthFragment extends Fragment {
         viewModel = new ViewModelProvider(this, viewModelFactory).get(AuthViewModel.class);
 
         tilName = view.findViewById(R.id.til_display_name);
+        tilUsername = view.findViewById(R.id.til_username);
+        tilEmail = view.findViewById(R.id.til_email);
         tilConfirm = view.findViewById(R.id.til_confirm_password);
         etName = view.findViewById(R.id.et_display_name);
+        etUsername = view.findViewById(R.id.et_username);
         etEmail = view.findViewById(R.id.et_email);
         etPassword = view.findViewById(R.id.et_password);
         etConfirm = view.findViewById(R.id.et_confirm_password);
@@ -109,6 +116,12 @@ public class AuthFragment extends Fragment {
         signUpMode = signUp;
         int visibleInSignUp = signUp ? View.VISIBLE : View.GONE;
         tilName.setVisibility(visibleInSignUp);
+        tilUsername.setVisibility(visibleInSignUp);
+        // Sign in (and password reset) accept a username, sign up needs a real email.
+        tilEmail.setHint(signUp ? R.string.hint_email : R.string.hint_email_or_username);
+        etEmail.setInputType(signUp
+                ? InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+                : InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         tilConfirm.setVisibility(visibleInSignUp);
         btnForgot.setVisibility(signUp ? View.GONE : View.VISIBLE);
         btnSubmit.setText(signUp ? R.string.auth_btn_sign_up : R.string.auth_tab_sign_in);
@@ -122,7 +135,7 @@ public class AuthFragment extends Fragment {
                 tilConfirm.setError(getString(R.string.error_password_mismatch));
                 return;
             }
-            viewModel.signUp(text(etName), text(etEmail), text(etPassword));
+            viewModel.signUp(text(etName), text(etUsername), text(etEmail), text(etPassword));
         } else {
             viewModel.signIn(text(etEmail), text(etPassword));
         }

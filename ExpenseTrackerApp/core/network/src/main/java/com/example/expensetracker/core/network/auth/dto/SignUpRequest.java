@@ -8,18 +8,21 @@ public class SignUpRequest {
     // Stored by Supabase as user_metadata.
     final Data data;
 
-    public SignUpRequest(String email, String password, String displayName) {
+    public SignUpRequest(String email, String password, String displayName, String username) {
         this.email = email;
         this.password = password;
-        this.data = new Data(displayName);
+        this.data = new Data(displayName, username);
     }
 
     static class Data {
         @SerializedName("display_name")
         final String displayName;
+        // The handle_new_user trigger copies this into public.profiles.
+        final String username;
 
-        Data(String displayName) {
+        Data(String displayName, String username) {
             this.displayName = displayName;
+            this.username = username;
         }
     }
 }

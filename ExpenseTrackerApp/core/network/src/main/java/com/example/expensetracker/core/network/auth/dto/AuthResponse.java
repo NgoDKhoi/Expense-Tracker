@@ -29,5 +29,7 @@ public class AuthResponse {
     public static class Metadata {
         @SerializedName("display_name")
         public String displayName;
+
+        public String username;
     }
 }

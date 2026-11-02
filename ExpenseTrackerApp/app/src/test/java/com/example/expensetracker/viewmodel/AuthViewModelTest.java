@@ -54,7 +54,7 @@ public class AuthViewModelTest {
 
     @Test
     public void signIn_success_publishesUser() {
-        UserModel user = new UserModel("1", "a@b.com", "An");
+        UserModel user = new UserModel("1", "a@b.com", "An", "an");
         when(signInUseCase.execute("a@b.com", "123456")).thenReturn(Result.success(user));
 
         viewModel.signIn("a@b.com", "123456");
@@ -65,10 +65,10 @@ public class AuthViewModelTest {
 
     @Test
     public void signUp_error_publishesMessage() {
-        when(signUpUseCase.execute("An", "a@b.com", "123456"))
+        when(signUpUseCase.execute("An", "an", "a@b.com", "123456"))
                 .thenReturn(Result.error("Email đã được đăng ký", null));
 
-        viewModel.signUp("An", "a@b.com", "123456");
+        viewModel.signUp("An", "an", "a@b.com", "123456");
 
         assertTrue(viewModel.getAuthState().getValue().isError());
         assertEquals("Email đã được đăng ký", viewModel.getAuthState().getValue().getMessage());

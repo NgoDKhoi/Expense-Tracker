@@ -13,13 +13,20 @@ public class SignUpUseCase {
         this.repository = repository;
     }
 
-    public Result<UserModel> execute(String displayName, String email, String password) {
+    public Result<UserModel> execute(String displayName, String username, String email, String password) {
         if (displayName == null || displayName.trim().isEmpty()) {
             return Result.error("Vui lòng nhập tên hiển thị", null);
         }
-        String error = AuthInput.checkEmail(email);
+        String error = AuthInput.checkUsername(username);
+        if (error == null) error = AuthInput.checkEmail(email);
         if (error == null) error = AuthInput.checkPassword(password);
         if (error != null) return Result.error(error, null);
-        return repository.signUp(email.trim(), password, displayName.trim());
+
+        String normalizedUsername = AuthInput.normalizeUsername(username);
+        Result<String> taken = repository.findEmailByUsername(normalizedUsername);
+        if (taken.isError()) return Result.error(taken.getMessage(), taken.getException());
+        if (taken.getData() != null) return Result.error("Tên đăng nhập đã được sử dụng", null);
+
+        return repository.signUp(email.trim(), password, displayName.trim(), normalizedUsername);
     }
 }

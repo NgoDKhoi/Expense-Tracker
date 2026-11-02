@@ -102,6 +102,9 @@
     <string name="auth_btn_sign_up">Create account</string>
     <string name="auth_forgot_password">Forgot password?</string>
     <string name="hint_display_name">Display name</string>
+    <string name="hint_username">Username</string>
+    <string name="helper_username">3–20 characters: letters without accents, numbers or _</string>
+    <string name="hint_email_or_username">Email or username</string>
     <string name="hint_email">Email</string>
     <string name="hint_password">Password</string>
     <string name="hint_confirm_password">Confirm password</string>

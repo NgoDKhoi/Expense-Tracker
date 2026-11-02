@@ -48,7 +48,9 @@ public class AccountFragment extends Fragment {
         }
         ((TextView) view.findViewById(R.id.tv_account_initial)).setText(initialOf(user));
         ((TextView) view.findViewById(R.id.tv_account_name)).setText(user.getDisplayName());
-        ((TextView) view.findViewById(R.id.tv_account_email)).setText(user.getEmail());
+        String username = user.getUsername();
+        ((TextView) view.findViewById(R.id.tv_account_email)).setText(
+                username == null || username.isEmpty() ? user.getEmail() : "@" + username + "  ·  " + user.getEmail());
 
         view.findViewById(R.id.btn_sign_out).setOnClickListener(v ->
                 new MaterialAlertDialogBuilder(requireContext())

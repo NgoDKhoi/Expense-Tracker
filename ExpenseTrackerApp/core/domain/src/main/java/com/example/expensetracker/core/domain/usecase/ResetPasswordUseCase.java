@@ -12,9 +12,10 @@ public class ResetPasswordUseCase {
         this.repository = repository;
     }
 
-    public Result<Void> execute(String email) {
-        String error = AuthInput.checkEmail(email);
-        if (error != null) return Result.error(error, null);
-        return repository.sendPasswordReset(email.trim());
+    /** Accepts either an email or a username; the reset link goes to the account's email. */
+    public Result<Void> execute(String emailOrUsername) {
+        Result<String> email = AuthInput.resolveEmail(repository, emailOrUsername);
+        if (email.isError()) return Result.error(email.getMessage(), email.getException());
+        return repository.sendPasswordReset(email.getData());
     }
 }

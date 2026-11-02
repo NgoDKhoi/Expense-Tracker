@@ -31,6 +31,13 @@ public class AuthErrorMapperTest {
     }
 
     @Test
+    public void missingUsernameFunction_tellsToRunSql() {
+        String body = "{\"code\":\"PGRST202\",\"message\":\"Could not find the function public.email_for_username\"}";
+        assertEquals("Chưa cài đặt đăng nhập bằng tên trên Supabase (chạy file supabase/username_login.sql)",
+                AuthErrorMapper.fromResponse(404, body));
+    }
+
+    @Test
     public void rateLimitWithoutBody() {
         assertEquals("Thao tác quá nhiều lần, vui lòng thử lại sau ít phút",
                 AuthErrorMapper.fromResponse(429, null));

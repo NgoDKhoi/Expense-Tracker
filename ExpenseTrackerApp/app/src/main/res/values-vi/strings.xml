@@ -102,6 +102,9 @@
     <string name="auth_btn_sign_up">Tạo tài khoản</string>
     <string name="auth_forgot_password">Quên mật khẩu?</string>
     <string name="hint_display_name">Tên hiển thị</string>
+    <string name="hint_username">Tên đăng nhập</string>
+    <string name="helper_username">3–20 ký tự: chữ không dấu, số hoặc dấu _</string>
+    <string name="hint_email_or_username">Email hoặc tên đăng nhập</string>
     <string name="hint_email">Email</string>
     <string name="hint_password">Mật khẩu</string>
     <string name="hint_confirm_password">Nhập lại mật khẩu</string>

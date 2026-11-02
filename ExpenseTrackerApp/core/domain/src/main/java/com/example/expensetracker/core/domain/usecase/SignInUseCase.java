@@ -13,12 +13,16 @@ public class SignInUseCase {
         this.repository = repository;
     }
 
-    public Result<UserModel> execute(String email, String password) {
-        String error = AuthInput.checkEmail(email);
-        if (error == null && (password == null || password.isEmpty())) {
-            error = "Vui lòng nhập mật khẩu";
+    /** Accepts either an email or a username. */
+    public Result<UserModel> execute(String emailOrUsername, String password) {
+        if (password == null || password.isEmpty()) {
+            if (emailOrUsername == null || emailOrUsername.trim().isEmpty()) {
+                return Result.error("Vui lòng nhập email hoặc tên đăng nhập", null);
+            }
+            return Result.error("Vui lòng nhập mật khẩu", null);
         }
-        if (error != null) return Result.error(error, null);
-        return repository.signIn(email.trim(), password);
+        Result<String> email = AuthInput.resolveEmail(repository, emailOrUsername);
+        if (email.isError()) return Result.error(email.getMessage(), email.getException());
+        return repository.signIn(email.getData(), password);
     }
 }

@@ -11,6 +11,7 @@ import com.example.expensetracker.core.network.auth.dto.AuthResponse;
 import com.example.expensetracker.core.network.auth.dto.EmailRequest;
 import com.example.expensetracker.core.network.auth.dto.SignInRequest;
 import com.example.expensetracker.core.network.auth.dto.SignUpRequest;
+import com.example.expensetracker.core.network.auth.dto.UsernameRequest;
 
 import java.io.IOException;
 
@@ -35,6 +36,7 @@ public class AuthRepositoryImpl implements IAuthRepository {
     private static final String KEY_USER_ID = "user_id";
     private static final String KEY_EMAIL = "email";
     private static final String KEY_DISPLAY_NAME = "display_name";
+    private static final String KEY_USERNAME = "username";
 
     private final SupabaseAuthApi api;
     private final SharedPreferences prefs;
@@ -46,10 +48,10 @@ public class AuthRepositoryImpl implements IAuthRepository {
     }
 
     @Override
-    public Result<UserModel> signUp(String email, String password, String displayName) {
+    public Result<UserModel> signUp(String email, String password, String displayName, String username) {
         if (!isConfigured()) return Result.error(AuthErrorMapper.NOT_CONFIGURED, null);
         try {
-            Response<AuthResponse> response = api.signUp(new SignUpRequest(email, password, displayName)).execute();
+            Response<AuthResponse> response = api.signUp(new SignUpRequest(email, password, displayName, username)).execute();
             if (!response.isSuccessful()) return Result.error(errorMessage(response), null);
             AuthResponse body = response.body();
             if (body == null || body.accessToken == null) {
@@ -91,6 +93,19 @@ public class AuthRepositoryImpl implements IAuthRepository {
     }
 
     @Override
+    public Result<String> findEmailByUsername(String username) {
+        if (!isConfigured()) return Result.error(AuthErrorMapper.NOT_CONFIGURED, null);
+        try {
+            Response<String> response = api.emailForUsername(new UsernameRequest(username)).execute();
+            if (!response.isSuccessful()) return Result.error(errorMessage(response), null);
+            // A JSON null body means no account uses this username.
+            return Result.success(response.body());
+        } catch (IOException e) {
+            return Result.error(AuthErrorMapper.NETWORK, e);
+        }
+    }
+
+    @Override
     public void signOut() {
         String token = prefs.getString(KEY_ACCESS_TOKEN, null);
         // Clear locally first so the user is signed out even when offline.
@@ -107,13 +122,14 @@ public class AuthRepositoryImpl implements IAuthRepository {
     public UserModel getCurrentUser() {
         String id = prefs.getString(KEY_USER_ID, null);
         if (id == null) return null;
-        return new UserModel(id, prefs.getString(KEY_EMAIL, ""), prefs.getString(KEY_DISPLAY_NAME, ""));
+        return new UserModel(id, prefs.getString(KEY_EMAIL, ""), prefs.getString(KEY_DISPLAY_NAME, ""),
+                prefs.getString(KEY_USERNAME, ""));
     }
 
     private UserModel saveSession(AuthResponse body) {
-        String displayName = body.user.userMetadata != null && body.user.userMetadata.displayName != null
-                ? body.user.userMetadata.displayName
-                : "";
+        AuthResponse.Metadata meta = body.user.userMetadata;
+        String displayName = meta != null && meta.displayName != null ? meta.displayName : "";
+        String username = meta != null && meta.username != null ? meta.username : "";
         prefs.edit()
                 .putString(KEY_ACCESS_TOKEN, body.accessToken)
                 .putString(KEY_REFRESH_TOKEN, body.refreshToken)
@@ -121,8 +137,9 @@ public class AuthRepositoryImpl implements IAuthRepository {
                 .putString(KEY_USER_ID, body.user.id)
                 .putString(KEY_EMAIL, body.user.email)
                 .putString(KEY_DISPLAY_NAME, displayName)
+                .putString(KEY_USERNAME, username)
                 .apply();
-        return new UserModel(body.user.id, body.user.email, displayName);
+        return new UserModel(body.user.id, body.user.email, displayName, username);
     }
 
     private static String errorMessage(Response<?> response) {

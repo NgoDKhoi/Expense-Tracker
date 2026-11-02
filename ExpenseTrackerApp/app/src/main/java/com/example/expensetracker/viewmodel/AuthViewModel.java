@@ -56,19 +56,19 @@ public class AuthViewModel extends ViewModel {
         return getCurrentUserUseCase.execute();
     }
 
-    public void signIn(String email, String password) {
+    public void signIn(String emailOrUsername, String password) {
         authState.setValue(Result.loading());
-        executor.execute(() -> authState.postValue(signInUseCase.execute(email, password)));
+        executor.execute(() -> authState.postValue(signInUseCase.execute(emailOrUsername, password)));
     }
 
-    public void signUp(String displayName, String email, String password) {
+    public void signUp(String displayName, String username, String email, String password) {
         authState.setValue(Result.loading());
-        executor.execute(() -> authState.postValue(signUpUseCase.execute(displayName, email, password)));
+        executor.execute(() -> authState.postValue(signUpUseCase.execute(displayName, username, email, password)));
     }
 
-    public void resetPassword(String email) {
+    public void resetPassword(String emailOrUsername) {
         resetState.setValue(Result.loading());
-        executor.execute(() -> resetState.postValue(resetPasswordUseCase.execute(email)));
+        executor.execute(() -> resetState.postValue(resetPasswordUseCase.execute(emailOrUsername)));
     }
 
     public void signOut() {

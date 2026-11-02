@@ -18,6 +18,7 @@ public final class AuthErrorMapper {
     /**
      * Supabase returns either {"error_code": "...", "msg": "..."} (newer)
      * or {"error": "...", "error_description": "..."} (older).
+     * The database REST API (PostgREST) uses {"code": "PGRST...", "message": "..."}.
      */
     public static String fromResponse(int httpCode, String body) {
         String code = null;
@@ -25,7 +26,7 @@ public final class AuthErrorMapper {
         try {
             JsonObject json = GSON.fromJson(body, JsonObject.class);
             if (json != null) {
-                code = firstString(json, "error_code", "error");
+                code = firstString(json, "error_code", "error", "code");
                 message = firstString(json, "msg", "error_description", "message");
             }
         } catch (RuntimeException ignored) {
@@ -49,6 +50,8 @@ public final class AuthErrorMapper {
                     return "Email không hợp lệ";
                 case "signup_disabled":
                     return "Chức năng đăng ký đang bị tắt";
+                case "PGRST202":
+                    return "Chưa cài đặt đăng nhập bằng tên trên Supabase (chạy file supabase/username_login.sql)";
                 case "over_email_send_rate_limit":
                 case "over_request_rate_limit":
                     return "Thao tác quá nhiều lần, vui lòng thử lại sau ít phút";
