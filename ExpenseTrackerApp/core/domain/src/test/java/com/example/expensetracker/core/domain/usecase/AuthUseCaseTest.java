@@ -6,12 +6,15 @@ import com.example.expensetracker.core.domain.repository.IAuthRepository;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,6 +27,7 @@ public class AuthUseCaseTest {
     private SignUpUseCase signUp;
     private SignInUseCase signIn;
     private ResetPasswordUseCase resetPassword;
+    private VerifySignUpUseCase verifySignUp;
 
     @Before
     public void setup() {
@@ -31,6 +35,7 @@ public class AuthUseCaseTest {
         signUp = new SignUpUseCase(repository);
         signIn = new SignInUseCase(repository);
         resetPassword = new ResetPasswordUseCase(repository);
+        verifySignUp = new VerifySignUpUseCase(repository);
     }
 
     // --- Sign up ---
@@ -136,12 +141,68 @@ public class AuthUseCaseTest {
         when(repository.findEmailByUsername("viethoang")).thenReturn(Result.success("a@b.com"));
         when(repository.sendPasswordReset("a@b.com")).thenReturn(Result.success(null));
 
-        assertTrue(resetPassword.execute("viethoang").isSuccess());
+        Result<String> result = resetPassword.execute("viethoang");
+
+        assertTrue(result.isSuccess());
+        assertEquals("a@b.com", result.getData());
     }
 
     @Test
     public void resetPassword_empty_fails() {
         assertTrue(resetPassword.execute("").isError());
         verify(repository, never()).sendPasswordReset(anyString());
+    }
+
+    // --- Email codes ---
+
+    @Test
+    public void verifySignUp_badCode_blockedBeforeServer() {
+        assertTrue(verifySignUp.execute("a@b.com", "12ab").isError());
+        verify(repository, never()).verifyEmailCode(anyString(), anyString(), anyBoolean());
+    }
+
+    @Test
+    public void verifySignUp_trimsCode() {
+        UserModel user = new UserModel("1", "a@b.com", "An", "an");
+        when(repository.verifyEmailCode("a@b.com", "123456", false)).thenReturn(Result.success(user));
+
+        assertTrue(verifySignUp.execute("a@b.com", " 123456 ").isSuccess());
+    }
+
+    @Test
+    public void resetConfirm_verifiesThenSetsPassword() {
+        UserModel user = new UserModel("1", "a@b.com", "An", "an");
+        when(repository.verifyEmailCode("a@b.com", "123456", true)).thenReturn(Result.success(user));
+        when(repository.updatePassword("newpass")).thenReturn(Result.success(null));
+
+        Result<UserModel> result = resetPassword.confirm("a@b.com", "123456", "newpass");
+
+        assertTrue(result.isSuccess());
+        InOrder order = inOrder(repository);
+        order.verify(repository).verifyEmailCode("a@b.com", "123456", true);
+        order.verify(repository).updatePassword("newpass");
+    }
+
+    @Test
+    public void resetConfirm_retryAfterFailedUpdate_skipsUsedCode() {
+        when(repository.getCurrentUser()).thenReturn(new UserModel("1", "A@b.com", "An", "an"));
+        when(repository.updatePassword("newpass")).thenReturn(Result.success(null));
+
+        assertTrue(resetPassword.confirm("a@b.com", "123456", "newpass").isSuccess());
+        verify(repository, never()).verifyEmailCode(anyString(), anyString(), anyBoolean());
+    }
+
+    @Test
+    public void resetConfirm_shortPassword_blockedBeforeServer() {
+        assertTrue(resetPassword.confirm("a@b.com", "123456", "123").isError());
+        verify(repository, never()).verifyEmailCode(anyString(), anyString(), anyBoolean());
+    }
+
+    @Test
+    public void resetConfirm_wrongCode_doesNotChangePassword() {
+        when(repository.verifyEmailCode("a@b.com", "000000", true)).thenReturn(Result.error("Mã không đúng hoặc đã hết hạn", null));
+
+        assertTrue(resetPassword.confirm("a@b.com", "000000", "newpass").isError());
+        verify(repository, never()).updatePassword(anyString());
     }
 }

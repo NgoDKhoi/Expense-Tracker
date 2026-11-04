@@ -48,4 +48,16 @@ public class AuthErrorMapperTest {
         assertEquals("Máy chủ đang gặp sự cố, vui lòng thử lại sau",
                 AuthErrorMapper.fromResponse(502, "<html>Bad gateway</html>"));
     }
+
+    @Test
+    public void wrongOrExpiredCode() {
+        String body = "{\"code\":403,\"error_code\":\"otp_expired\",\"msg\":\"Token has expired or is invalid\"}";
+        assertEquals("Mã không đúng hoặc đã hết hạn", AuthErrorMapper.fromResponse(403, body));
+    }
+
+    @Test
+    public void samePassword() {
+        String body = "{\"code\":422,\"error_code\":\"same_password\",\"msg\":\"New password should be different\"}";
+        assertEquals("Mật khẩu mới phải khác mật khẩu cũ", AuthErrorMapper.fromResponse(422, body));
+    }
 }

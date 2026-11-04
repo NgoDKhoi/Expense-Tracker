@@ -13,6 +13,8 @@ final class AuthInput {
     private static final Pattern EMAIL = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
     // Must match the username_format constraint in supabase/username_login.sql.
     private static final Pattern USERNAME = Pattern.compile("^[a-z0-9_]{3,20}$");
+    // Supabase's email code is 6 digits by default; the dashboard allows up to 10.
+    private static final Pattern CODE = Pattern.compile("^[0-9]{6,10}$");
 
     private AuthInput() {
     }
@@ -28,6 +30,12 @@ final class AuthInput {
         if (password.length() < MIN_PASSWORD_LENGTH) {
             return "Mật khẩu phải có ít nhất " + MIN_PASSWORD_LENGTH + " ký tự";
         }
+        return null;
+    }
+
+    static String checkCode(String code) {
+        if (code == null || code.trim().isEmpty()) return "Vui lòng nhập mã xác nhận";
+        if (!CODE.matcher(code.trim()).matches()) return "Mã xác nhận không hợp lệ";
         return null;
     }
 

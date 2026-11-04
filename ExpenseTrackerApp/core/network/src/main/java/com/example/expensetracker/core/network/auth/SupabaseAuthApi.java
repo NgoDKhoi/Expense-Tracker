@@ -2,15 +2,19 @@ package com.example.expensetracker.core.network.auth;
 
 import com.example.expensetracker.core.network.auth.dto.AuthResponse;
 import com.example.expensetracker.core.network.auth.dto.EmailRequest;
+import com.example.expensetracker.core.network.auth.dto.PasswordRequest;
 import com.example.expensetracker.core.network.auth.dto.RefreshRequest;
+import com.example.expensetracker.core.network.auth.dto.ResendRequest;
 import com.example.expensetracker.core.network.auth.dto.SignInRequest;
 import com.example.expensetracker.core.network.auth.dto.SignUpRequest;
 import com.example.expensetracker.core.network.auth.dto.UsernameRequest;
+import com.example.expensetracker.core.network.auth.dto.VerifyRequest;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.Header;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
 
 /** Supabase Auth (GoTrue) REST endpoints, plus the username lookup RPC. The apikey header is added by NetworkModule. */
 public interface SupabaseAuthApi {
@@ -26,6 +30,16 @@ public interface SupabaseAuthApi {
 
     @POST("auth/v1/recover")
     Call<Void> recover(@Body EmailRequest body);
+
+    /** Email code (sign up or password reset) in exchange for a session. */
+    @POST("auth/v1/verify")
+    Call<AuthResponse> verify(@Body VerifyRequest body);
+
+    @POST("auth/v1/resend")
+    Call<Void> resend(@Body ResendRequest body);
+
+    @PUT("auth/v1/user")
+    Call<Void> updateUser(@Header("Authorization") String bearerToken, @Body PasswordRequest body);
 
     @POST("auth/v1/logout")
     Call<Void> logout(@Header("Authorization") String bearerToken);

@@ -3,16 +3,20 @@ package com.example.expensetracker.core.network.auth;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.example.expensetracker.core.domain.EmailNotConfirmedException;
 import com.example.expensetracker.core.domain.Result;
 import com.example.expensetracker.core.domain.model.UserModel;
 import com.example.expensetracker.core.domain.repository.IAuthRepository;
 import com.example.expensetracker.core.network.BuildConfig;
 import com.example.expensetracker.core.network.auth.dto.AuthResponse;
 import com.example.expensetracker.core.network.auth.dto.EmailRequest;
+import com.example.expensetracker.core.network.auth.dto.PasswordRequest;
 import com.example.expensetracker.core.network.auth.dto.RefreshRequest;
+import com.example.expensetracker.core.network.auth.dto.ResendRequest;
 import com.example.expensetracker.core.network.auth.dto.SignInRequest;
 import com.example.expensetracker.core.network.auth.dto.SignUpRequest;
 import com.example.expensetracker.core.network.auth.dto.UsernameRequest;
+import com.example.expensetracker.core.network.auth.dto.VerifyRequest;
 
 import java.io.IOException;
 import java.util.function.LongSupplier;
@@ -65,8 +69,8 @@ public class AuthRepositoryImpl implements IAuthRepository {
             if (!response.isSuccessful()) return Result.error(errorMessage(response), null);
             AuthResponse body = response.body();
             if (body == null || body.accessToken == null) {
-                // Email confirmation is still on in the Supabase project.
-                return Result.error("Vui lòng mở email để xác nhận tài khoản, sau đó đăng nhập", null);
+                // Confirm email is on in the Supabase project: a code was mailed instead of a session.
+                return codeNeeded(email);
             }
             return Result.success(saveSession(body));
         } catch (IOException e) {
@@ -79,7 +83,11 @@ public class AuthRepositoryImpl implements IAuthRepository {
         if (!isConfigured()) return Result.error(AuthErrorMapper.NOT_CONFIGURED, null);
         try {
             Response<AuthResponse> response = api.signIn(new SignInRequest(email, password)).execute();
-            if (!response.isSuccessful()) return Result.error(errorMessage(response), null);
+            if (!response.isSuccessful()) {
+                String body = errorBody(response);
+                if (body != null && body.contains("email_not_confirmed")) return codeNeeded(email);
+                return Result.error(AuthErrorMapper.fromResponse(response.code(), body), null);
+            }
             AuthResponse body = response.body();
             if (body == null || body.accessToken == null || body.user == null) {
                 return Result.error("Phản hồi đăng nhập không hợp lệ", null);
@@ -164,6 +172,53 @@ public class AuthRepositoryImpl implements IAuthRepository {
         }
     }
 
+    @Override
+    public Result<UserModel> verifyEmailCode(String email, String code, boolean recovery) {
+        if (!isConfigured()) return Result.error(AuthErrorMapper.NOT_CONFIGURED, null);
+        try {
+            Response<AuthResponse> response = api.verify(
+                    new VerifyRequest(recovery ? "recovery" : "signup", email, code)).execute();
+            if (!response.isSuccessful()) return Result.error(errorMessage(response), null);
+            AuthResponse body = response.body();
+            if (body == null || body.accessToken == null || body.user == null) {
+                return Result.error(AuthErrorMapper.CODE_INVALID, null);
+            }
+            return Result.success(saveSession(body));
+        } catch (IOException e) {
+            return Result.error(AuthErrorMapper.NETWORK, e);
+        }
+    }
+
+    @Override
+    public Result<Void> resendSignUpCode(String email) {
+        if (!isConfigured()) return Result.error(AuthErrorMapper.NOT_CONFIGURED, null);
+        try {
+            Response<Void> response = api.resend(new ResendRequest(email)).execute();
+            if (!response.isSuccessful()) return Result.error(errorMessage(response), null);
+            return Result.success(null);
+        } catch (IOException e) {
+            return Result.error(AuthErrorMapper.NETWORK, e);
+        }
+    }
+
+    @Override
+    public Result<Void> updatePassword(String newPassword) {
+        Result<String> token = getValidAccessToken();
+        if (!token.isSuccess()) return Result.error(token.getMessage(), token.getException());
+        if (token.getData() == null) return Result.error("Phiên đăng nhập đã hết, vui lòng thử lại", null);
+        try {
+            Response<Void> response = api.updateUser("Bearer " + token.getData(), new PasswordRequest(newPassword)).execute();
+            if (!response.isSuccessful()) return Result.error(errorMessage(response), null);
+            return Result.success(null);
+        } catch (IOException e) {
+            return Result.error(AuthErrorMapper.NETWORK, e);
+        }
+    }
+
+    private static <T> Result<T> codeNeeded(String email) {
+        return Result.error("Nhập mã xác nhận đã gửi tới " + email, new EmailNotConfirmedException(email));
+    }
+
     private UserModel saveSession(AuthResponse body) {
         AuthResponse.Metadata meta = body.user.userMetadata;
         String displayName = meta != null && meta.displayName != null ? meta.displayName : "";
@@ -181,13 +236,15 @@ public class AuthRepositoryImpl implements IAuthRepository {
     }
 
     private static String errorMessage(Response<?> response) {
-        String body = null;
+        return AuthErrorMapper.fromResponse(response.code(), errorBody(response));
+    }
+
+    private static String errorBody(Response<?> response) {
         try (ResponseBody errorBody = response.errorBody()) {
-            if (errorBody != null) body = errorBody.string();
+            return errorBody != null ? errorBody.string() : null;
         } catch (IOException ignored) {
-            // Use the HTTP code only.
+            return null; // Use the HTTP code only.
         }
-        return AuthErrorMapper.fromResponse(response.code(), body);
     }
 
     private static boolean isConfigured() {

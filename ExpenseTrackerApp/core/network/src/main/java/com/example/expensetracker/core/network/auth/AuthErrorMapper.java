@@ -8,6 +8,7 @@ import com.google.gson.JsonObject;
 public final class AuthErrorMapper {
 
     public static final String NETWORK = "Không có kết nối mạng. Vui lòng thử lại.";
+    public static final String CODE_INVALID = "Mã không đúng hoặc đã hết hạn";
     public static final String NOT_CONFIGURED = "Chưa cấu hình Supabase (thiếu SUPABASE_URL / SUPABASE_ANON_KEY trong local.properties)";
 
     private static final Gson GSON = new Gson();
@@ -45,6 +46,10 @@ public final class AuthErrorMapper {
                     return "Mật khẩu quá yếu, hãy dùng mật khẩu dài hơn";
                 case "email_not_confirmed":
                     return "Email chưa được xác nhận";
+                case "otp_expired":
+                    return CODE_INVALID;
+                case "same_password":
+                    return "Mật khẩu mới phải khác mật khẩu cũ";
                 case "validation_failed":
                 case "email_address_invalid":
                     return "Email không hợp lệ";

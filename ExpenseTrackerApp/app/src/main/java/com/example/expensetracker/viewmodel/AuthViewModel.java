@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.expensetracker.core.domain.EmailNotConfirmedException;
 import com.example.expensetracker.core.domain.Result;
 import com.example.expensetracker.core.domain.model.UserModel;
 import com.example.expensetracker.core.domain.repository.ISyncScheduler;
@@ -14,6 +15,7 @@ import com.example.expensetracker.core.domain.usecase.SignInUseCase;
 import com.example.expensetracker.core.domain.usecase.SignOutUseCase;
 import com.example.expensetracker.core.domain.usecase.SignUpUseCase;
 import com.example.expensetracker.core.domain.usecase.SyncDataUseCase;
+import com.example.expensetracker.core.domain.usecase.VerifySignUpUseCase;
 
 import java.util.concurrent.ExecutorService;
 
@@ -32,6 +34,19 @@ public class AuthViewModel extends ViewModel {
         }
     }
 
+    /** The sheet is waiting for the code mailed to {@link #email}. */
+    public static final class CodeStep {
+        public enum Kind { SIGN_UP, RESET }
+
+        public final Kind kind;
+        public final String email;
+
+        public CodeStep(Kind kind, String email) {
+            this.kind = kind;
+            this.email = email;
+        }
+    }
+
     private final SignInUseCase signInUseCase;
     private final SignUpUseCase signUpUseCase;
     private final ResetPasswordUseCase resetPasswordUseCase;
@@ -41,12 +56,15 @@ public class AuthViewModel extends ViewModel {
     private final ISyncScheduler syncScheduler;
     private final SyncDataUseCase syncDataUseCase;
     private final GetSyncStatusUseCase getSyncStatusUseCase;
+    private final VerifySignUpUseCase verifySignUpUseCase;
 
     private final MutableLiveData<Result<UserModel>> authState = new MutableLiveData<>();
-    private final MutableLiveData<Result<Void>> resetState = new MutableLiveData<>();
+    private final MutableLiveData<Result<String>> resetState = new MutableLiveData<>();
     private final MutableLiveData<Result<Void>> signOutState = new MutableLiveData<>();
     private final MutableLiveData<Result<Void>> syncNowState = new MutableLiveData<>();
     private final MutableLiveData<SyncInfo> syncInfo = new MutableLiveData<>();
+    private final MutableLiveData<CodeStep> codeStep = new MutableLiveData<>();
+    private final MutableLiveData<Result<Void>> resendState = new MutableLiveData<>();
     // Set before authState is posted, so the sign-in screen can read it on success.
     private volatile int unsyncedOnSignIn;
 
@@ -59,7 +77,8 @@ public class AuthViewModel extends ViewModel {
                          ExecutorService executor,
                          ISyncScheduler syncScheduler,
                          SyncDataUseCase syncDataUseCase,
-                         GetSyncStatusUseCase getSyncStatusUseCase) {
+                         GetSyncStatusUseCase getSyncStatusUseCase,
+                         VerifySignUpUseCase verifySignUpUseCase) {
         this.signInUseCase = signInUseCase;
         this.signUpUseCase = signUpUseCase;
         this.resetPasswordUseCase = resetPasswordUseCase;
@@ -69,13 +88,14 @@ public class AuthViewModel extends ViewModel {
         this.syncScheduler = syncScheduler;
         this.syncDataUseCase = syncDataUseCase;
         this.getSyncStatusUseCase = getSyncStatusUseCase;
+        this.verifySignUpUseCase = verifySignUpUseCase;
     }
 
     public LiveData<Result<UserModel>> getAuthState() {
         return authState;
     }
 
-    public LiveData<Result<Void>> getResetState() {
+    public LiveData<Result<String>> getResetState() {
         return resetState;
     }
 
@@ -91,6 +111,15 @@ public class AuthViewModel extends ViewModel {
         return syncInfo;
     }
 
+    /** Null when the sheet shows the normal sign in / sign up form. */
+    public LiveData<CodeStep> getCodeStep() {
+        return codeStep;
+    }
+
+    public LiveData<Result<Void>> getResendState() {
+        return resendState;
+    }
+
     /** Signed-in user from the saved session, or null for guests. */
     public UserModel getCurrentUser() {
         return getCurrentUserUseCase.execute();
@@ -98,7 +127,13 @@ public class AuthViewModel extends ViewModel {
 
     public void signIn(String emailOrUsername, String password) {
         authState.setValue(Result.loading());
-        executor.execute(() -> publishAuth(signInUseCase.execute(emailOrUsername, password)));
+        executor.execute(() -> {
+            Result<UserModel> result = signInUseCase.execute(emailOrUsername, password);
+            String email = unconfirmedEmail(result);
+            // The code from sign up may have expired by now, so mail a fresh one.
+            if (email != null) verifySignUpUseCase.resend(email);
+            publishAuth(result);
+        });
     }
 
     public void signUp(String displayName, String username, String email, String password) {
@@ -108,7 +143,39 @@ public class AuthViewModel extends ViewModel {
 
     public void resetPassword(String emailOrUsername) {
         resetState.setValue(Result.loading());
-        executor.execute(() -> resetState.postValue(resetPasswordUseCase.execute(emailOrUsername)));
+        executor.execute(() -> {
+            Result<String> result = resetPasswordUseCase.execute(emailOrUsername);
+            if (result.isSuccess()) codeStep.postValue(new CodeStep(CodeStep.Kind.RESET, result.getData()));
+            resetState.postValue(result);
+        });
+    }
+
+    /** newPassword is only used for a password reset. */
+    public void submitCode(String code, String newPassword) {
+        CodeStep step = codeStep.getValue();
+        if (step == null) return;
+        authState.setValue(Result.loading());
+        executor.execute(() -> publishAuth(step.kind == CodeStep.Kind.RESET
+                ? resetPasswordUseCase.confirm(step.email, code, newPassword)
+                : verifySignUpUseCase.execute(step.email, code)));
+    }
+
+    public void resendCode() {
+        CodeStep step = codeStep.getValue();
+        if (step == null) return;
+        resendState.setValue(Result.loading());
+        executor.execute(() -> {
+            if (step.kind == CodeStep.Kind.RESET) {
+                Result<String> sent = resetPasswordUseCase.execute(step.email);
+                resendState.postValue(sent.isSuccess() ? Result.success(null) : Result.error(sent.getMessage(), sent.getException()));
+            } else {
+                resendState.postValue(verifySignUpUseCase.resend(step.email));
+            }
+        });
+    }
+
+    public void leaveCodeStep() {
+        codeStep.setValue(null);
     }
 
     /** Expenses made on this device before signing in; when > 0 the user picks merge or discard. */
@@ -161,7 +228,20 @@ public class AuthViewModel extends ViewModel {
         syncInfo.postValue(new SyncInfo(getSyncStatusUseCase.pendingChanges(), getSyncStatusUseCase.lastSyncedAt()));
     }
 
+    private static String unconfirmedEmail(Result<?> result) {
+        return result.getException() instanceof EmailNotConfirmedException
+                ? ((EmailNotConfirmedException) result.getException()).getEmail()
+                : null;
+    }
+
     private void publishAuth(Result<UserModel> result) {
+        String unconfirmed = unconfirmedEmail(result);
+        if (unconfirmed != null) {
+            // Not a failure: switch the sheet to the code step. Null ends the spinner without a message.
+            codeStep.postValue(new CodeStep(CodeStep.Kind.SIGN_UP, unconfirmed));
+            authState.postValue(null);
+            return;
+        }
         if (result.isSuccess()) {
             unsyncedOnSignIn = getSyncStatusUseCase.unsyncedTransactions();
             // With data on the device, wait for the user's merge / discard choice before syncing,
