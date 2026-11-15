@@ -102,6 +102,9 @@
     <string name="auth_tab_sign_up">Sign up</string>
     <string name="auth_btn_sign_up">Create account</string>
     <string name="auth_forgot_password">Forgot password?</string>
+    <string name="auth_or_divider">OR</string>
+    <string name="auth_btn_google">Continue with Google</string>
+    <string name="error_browser_unavailable">Could not open browser for Google sign-in</string>
     <string name="hint_display_name">Display name</string>
     <string name="hint_username">Username</string>
     <string name="helper_username">3–20 characters: letters without accents, numbers or _</string>
@@ -150,4 +153,46 @@
     <string name="msg_sync_done">Synced</string>
     <string name="cd_back">Back</string>
     <string name="cd_account">Account</string>
+
+    <!-- Gamification: Virtual Piggy Pet & Leaderboard -->
+    <string name="piggy_screen_title">PIGGY SAVER &amp; RANKING</string>
+    <string name="piggy_streak_badge">%1$d-day Streak</string>
+    <string name="piggy_total_days_badge">%1$d safe days</string>
+    <string name="piggy_mood_happy">Happy • Safe Budget</string>
+    <string name="piggy_mood_worried">Worried • Near Limit</string>
+    <string name="piggy_mood_sad">Sad • Over Budget</string>
+    <string name="piggy_level_baby">Lv.1 • Baby Piggy</string>
+    <string name="piggy_level_student">Lv.2 • Student Piggy</string>
+    <string name="piggy_level_adult">Lv.3 • Master Piggy</string>
+    <string name="piggy_level_royal">Lv.4 • Royal Piggy 👑</string>
+    <string name="piggy_daily_budget_label">Today\'s Spending / Daily Cap</string>
+    <string name="piggy_tap_hint">Tap Piggy for financial advice!</string>
+    <string name="piggy_demo_title">Prototype Demo Controls</string>
+    <string name="piggy_demo_happy">Spent 45k (Happy)</string>
+    <string name="piggy_demo_worried">Spent 90k (Worried)</string>
+    <string name="piggy_demo_sad">Spent 135k (Over)</string>
+    <string name="piggy_demo_evolve">Boost Streak (+15d)</string>
+    <string name="leaderboard_title">Saving Leaderboard</string>
+    <string name="leaderboard_mode_streak">Current Streak</string>
+    <string name="leaderboard_mode_total_days">Total Safe Days</string>
+    <string name="leaderboard_scope_global">Global</string>
+    <string name="leaderboard_scope_friends">Friends</string>
+    <string name="leaderboard_score_days">%1$d days</string>
+    <string name="leaderboard_you_suffix"> (You)</string>
+    <string name="nav_leaderboard">Leaderboard</string>
+    <string name="leaderboard_your_standing_title">Your Current Standing</string>
+    <string name="leaderboard_your_rank_format">Rank #%1$d</string>
+    <string name="piggy_edit_limit_action">Edit Cap</string>
+    <string name="dialog_daily_limit_title">Daily Spending Cap</string>
+    <string name="dialog_daily_limit_hint">0 ₫</string>
+    <string name="msg_daily_limit_updated">Daily spending cap updated</string>
+    <string name="msg_invalid_amount">Please enter a valid amount</string>
+    <string name="piggy_chat_section_title">Chat with Piggy AI</string>
+    <string name="piggy_chat_typing">Piggy is thinking…</string>
+    <string name="piggy_chat_input_hint">Ask Piggy…</string>
+    <string name="cd_send_message">Send</string>
+    <string name="chip_prompt_today">📊 Today\'s spend</string>
+    <string name="chip_prompt_top_category">🔥 Top category</string>
+    <string name="chip_prompt_streak_tips">💡 Streak tips</string>
+    <string name="chip_prompt_wallet_health">🐷 Wallet health</string>
 </resources>

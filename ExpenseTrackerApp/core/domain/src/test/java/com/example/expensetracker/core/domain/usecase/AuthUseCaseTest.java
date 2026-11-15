@@ -28,6 +28,7 @@ public class AuthUseCaseTest {
     private SignInUseCase signIn;
     private ResetPasswordUseCase resetPassword;
     private VerifySignUpUseCase verifySignUp;
+    private CompleteGoogleSignInUseCase completeGoogleSignIn;
 
     @Before
     public void setup() {
@@ -36,6 +37,7 @@ public class AuthUseCaseTest {
         signIn = new SignInUseCase(repository);
         resetPassword = new ResetPasswordUseCase(repository);
         verifySignUp = new VerifySignUpUseCase(repository);
+        completeGoogleSignIn = new CompleteGoogleSignInUseCase(repository);
     }
 
     // --- Sign up ---
@@ -204,5 +206,42 @@ public class AuthUseCaseTest {
 
         assertTrue(resetPassword.confirm("a@b.com", "000000", "newpass").isError());
         verify(repository, never()).updatePassword(anyString());
+    }
+
+    // --- Google OAuth ---
+
+    @Test
+    public void googleSignInUrl_blankRedirect_blockedBeforeRepository() {
+        assertTrue(completeGoogleSignIn.getSignInUrl("   ").isError());
+        verify(repository, never()).getGoogleSignInUrl(anyString());
+    }
+
+    @Test
+    public void googleSignInUrl_validRedirect_trimsAndDelegates() {
+        when(repository.getGoogleSignInUrl("expensetracker://auth-callback"))
+                .thenReturn(Result.success("https://example.supabase.co/auth/v1/authorize?provider=google"));
+
+        Result<String> result = completeGoogleSignIn.getSignInUrl(" expensetracker://auth-callback ");
+
+        assertTrue(result.isSuccess());
+        verify(repository).getGoogleSignInUrl("expensetracker://auth-callback");
+    }
+
+    @Test
+    public void googleSignInExecute_blankCallback_blockedBeforeRepository() {
+        assertTrue(completeGoogleSignIn.execute("").isError());
+        verify(repository, never()).completeOAuthSignIn(anyString());
+    }
+
+    @Test
+    public void googleSignInExecute_validCallback_delegatesToRepository() {
+        UserModel user = new UserModel("1", "khoi@gmail.com", "Khôi", "khoi");
+        when(repository.completeOAuthSignIn("expensetracker://auth-callback#access_token=a"))
+                .thenReturn(Result.success(user));
+
+        Result<UserModel> result = completeGoogleSignIn.execute("expensetracker://auth-callback#access_token=a");
+
+        assertTrue(result.isSuccess());
+        assertEquals("khoi@gmail.com", result.getData().getEmail());
     }
 }

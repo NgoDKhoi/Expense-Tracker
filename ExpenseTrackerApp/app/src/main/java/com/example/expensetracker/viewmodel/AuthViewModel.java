@@ -8,6 +8,7 @@ import com.example.expensetracker.core.domain.EmailNotConfirmedException;
 import com.example.expensetracker.core.domain.Result;
 import com.example.expensetracker.core.domain.model.UserModel;
 import com.example.expensetracker.core.domain.repository.ISyncScheduler;
+import com.example.expensetracker.core.domain.usecase.CompleteGoogleSignInUseCase;
 import com.example.expensetracker.core.domain.usecase.GetCurrentUserUseCase;
 import com.example.expensetracker.core.domain.usecase.GetSyncStatusUseCase;
 import com.example.expensetracker.core.domain.usecase.ResetPasswordUseCase;
@@ -22,6 +23,8 @@ import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
 
 public class AuthViewModel extends ViewModel {
+
+    public static final String OAUTH_REDIRECT_URI = "expensetracker://auth-callback";
 
     /** What the account page shows about backup. */
     public static final class SyncInfo {
@@ -57,6 +60,7 @@ public class AuthViewModel extends ViewModel {
     private final SyncDataUseCase syncDataUseCase;
     private final GetSyncStatusUseCase getSyncStatusUseCase;
     private final VerifySignUpUseCase verifySignUpUseCase;
+    private final CompleteGoogleSignInUseCase completeGoogleSignInUseCase;
 
     private final MutableLiveData<Result<UserModel>> authState = new MutableLiveData<>();
     private final MutableLiveData<Result<String>> resetState = new MutableLiveData<>();
@@ -78,7 +82,8 @@ public class AuthViewModel extends ViewModel {
                          ISyncScheduler syncScheduler,
                          SyncDataUseCase syncDataUseCase,
                          GetSyncStatusUseCase getSyncStatusUseCase,
-                         VerifySignUpUseCase verifySignUpUseCase) {
+                         VerifySignUpUseCase verifySignUpUseCase,
+                         CompleteGoogleSignInUseCase completeGoogleSignInUseCase) {
         this.signInUseCase = signInUseCase;
         this.signUpUseCase = signUpUseCase;
         this.resetPasswordUseCase = resetPasswordUseCase;
@@ -89,6 +94,7 @@ public class AuthViewModel extends ViewModel {
         this.syncDataUseCase = syncDataUseCase;
         this.getSyncStatusUseCase = getSyncStatusUseCase;
         this.verifySignUpUseCase = verifySignUpUseCase;
+        this.completeGoogleSignInUseCase = completeGoogleSignInUseCase;
     }
 
     public LiveData<Result<UserModel>> getAuthState() {
@@ -139,6 +145,15 @@ public class AuthViewModel extends ViewModel {
     public void signUp(String displayName, String username, String email, String password) {
         authState.setValue(Result.loading());
         executor.execute(() -> publishAuth(signUpUseCase.execute(displayName, username, email, password)));
+    }
+
+    public Result<String> getGoogleSignInUrl() {
+        return completeGoogleSignInUseCase.getSignInUrl(OAUTH_REDIRECT_URI);
+    }
+
+    public void completeGoogleSignIn(String callbackUri) {
+        authState.setValue(Result.loading());
+        executor.execute(() -> publishAuth(completeGoogleSignInUseCase.execute(callbackUri)));
     }
 
     public void resetPassword(String emailOrUsername) {

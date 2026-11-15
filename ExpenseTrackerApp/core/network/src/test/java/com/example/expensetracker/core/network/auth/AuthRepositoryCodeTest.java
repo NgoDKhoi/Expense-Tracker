@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Map;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -117,5 +118,66 @@ public class AuthRepositoryCodeTest {
     @Test
     public void updatePassword_signedOut_fails() {
         assertTrue(repo.updatePassword("newpass").isError());
+    }
+
+    @Test
+    public void getGoogleSignInUrl_buildsAuthorizeUrlWithGoogleProvider() {
+        assumeConfigured();
+
+        Result<String> result = repo.getGoogleSignInUrl("expensetracker://auth-callback");
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.getData().contains("auth/v1/authorize?provider=google"));
+        assertTrue(result.getData().contains("redirect_to=expensetracker%3A%2F%2Fauth-callback"));
+        assertTrue(result.getData().contains("prompt=select_account"));
+    }
+
+    @Test
+    public void completeOAuthSignIn_validFragment_fetchesUserAndDerivesGoogleProfile() throws IOException {
+        assumeConfigured();
+        AuthResponse.User googleUser = new AuthResponse.User();
+        googleUser.id = "g-1";
+        googleUser.email = "khoi.nguyen@gmail.com";
+        googleUser.userMetadata = new AuthResponse.Metadata();
+        googleUser.userMetadata.fullName = "Khoi Nguyen";
+
+        Call<AuthResponse.User> userCall = call(Response.success(googleUser));
+        when(api.getUser("Bearer access_tok")).thenReturn(userCall);
+
+        String callback = "expensetracker://auth-callback#access_token=access_tok&refresh_token=ref_tok&expires_in=3600";
+        Result<UserModel> result = repo.completeOAuthSignIn(callback);
+
+        assertTrue(result.isSuccess());
+        assertEquals("Khoi Nguyen", result.getData().getDisplayName());
+        assertEquals("khoi_nguyen", result.getData().getUsername());
+        assertEquals("khoi.nguyen@gmail.com", repo.getCurrentUser().getEmail());
+        assertEquals("access_tok", repo.getValidAccessToken().getData());
+    }
+
+    @Test
+    public void completeOAuthSignIn_errorInCallback_returnsErrorMessage() {
+        assumeConfigured();
+
+        String callback = "expensetracker://auth-callback#error=access_denied&error_description=User+cancelled+login";
+        Result<UserModel> result = repo.completeOAuthSignIn(callback);
+
+        assertTrue(result.isError());
+        assertEquals("User cancelled login", result.getMessage());
+    }
+
+    @Test
+    public void deriveUsernameFromEmail_normalizesAndTruncates() {
+        assertEquals("khoi_nguyen", AuthRepositoryImpl.deriveUsernameFromEmail("Khoi.Nguyen+123@gmail.com".replace("+123", "")));
+        assertEquals("very_long_email_addr", AuthRepositoryImpl.deriveUsernameFromEmail("very.long.email.address.here@gmail.com"));
+    }
+
+    @Test
+    public void parseCallbackParams_extractsQueryAndFragmentTokens() {
+        Map<String, String> params = AuthRepositoryImpl.parseCallbackParams(
+                "expensetracker://auth-callback?state=abc#access_token=t1&refresh_token=r1&expires_in=3600");
+        assertEquals("abc", params.get("state"));
+        assertEquals("t1", params.get("access_token"));
+        assertEquals("r1", params.get("refresh_token"));
+        assertEquals("3600", params.get("expires_in"));
     }
 }

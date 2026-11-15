@@ -29,4 +29,8 @@ public interface IAuthRepository {
     Result<Void> resendSignUpCode(String email);
     /** Changes the signed-in user's password. */
     Result<Void> updatePassword(String newPassword);
+    /** Builds the Supabase OAuth authorize URL for Google Sign-In with the given redirect URI. */
+    Result<String> getGoogleSignInUrl(String redirectUri);
+    /** Completes an OAuth sign-in from the callback URI returned to the app's deep link. */
+    Result<UserModel> completeOAuthSignIn(String callbackUri);
 }

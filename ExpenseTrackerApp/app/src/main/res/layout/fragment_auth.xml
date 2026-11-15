@@ -244,5 +244,60 @@
                 app:indicatorSize="24dp"
                 app:trackThickness="3dp" />
         </FrameLayout>
+
+        <LinearLayout
+            android:id="@+id/group_social_auth"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_m"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/spacing_m"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:background="@color/surface_glass_stroke" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="@dimen/spacing_m"
+                    android:text="@string/auth_or_divider"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="@dimen/text_size_caption" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:background="@color/surface_glass_stroke" />
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_google_sign_in"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="@string/auth_btn_google"
+                android:textColor="@color/text_primary"
+                android:textSize="@dimen/text_size_body"
+                app:backgroundTint="@color/surface_glass"
+                app:cornerRadius="@dimen/radius_pill"
+                app:icon="@drawable/ic_google"
+                app:iconGravity="textStart"
+                app:iconPadding="@dimen/spacing_s"
+                app:iconTint="@null"
+                app:strokeColor="@color/surface_glass_stroke"
+                app:strokeWidth="1dp" />
+        </LinearLayout>
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

@@ -6,6 +6,7 @@ import com.example.expensetracker.core.domain.EmailNotConfirmedException;
 import com.example.expensetracker.core.domain.Result;
 import com.example.expensetracker.core.domain.model.UserModel;
 import com.example.expensetracker.core.domain.repository.ISyncScheduler;
+import com.example.expensetracker.core.domain.usecase.CompleteGoogleSignInUseCase;
 import com.example.expensetracker.core.domain.usecase.GetCurrentUserUseCase;
 import com.example.expensetracker.core.domain.usecase.GetSyncStatusUseCase;
 import com.example.expensetracker.core.domain.usecase.ResetPasswordUseCase;
@@ -49,6 +50,7 @@ public class AuthViewModelTest {
     @Mock private SyncDataUseCase syncDataUseCase;
     @Mock private GetSyncStatusUseCase getSyncStatusUseCase;
     @Mock private VerifySignUpUseCase verifySignUpUseCase;
+    @Mock private CompleteGoogleSignInUseCase completeGoogleSignInUseCase;
 
     private AuthViewModel viewModel;
 
@@ -63,7 +65,7 @@ public class AuthViewModelTest {
 
         viewModel = new AuthViewModel(signInUseCase, signUpUseCase, resetPasswordUseCase,
                 signOutUseCase, getCurrentUserUseCase, executor, syncScheduler, syncDataUseCase, getSyncStatusUseCase,
-                verifySignUpUseCase);
+                verifySignUpUseCase, completeGoogleSignInUseCase);
     }
 
     @Test
@@ -213,5 +215,43 @@ public class AuthViewModelTest {
         viewModel.leaveCodeStep();
 
         assertNull(viewModel.getCodeStep().getValue());
+    }
+
+    @Test
+    public void getGoogleSignInUrl_delegatesWithRedirectUri() {
+        when(completeGoogleSignInUseCase.getSignInUrl(AuthViewModel.OAUTH_REDIRECT_URI))
+                .thenReturn(Result.success("https://example.supabase.co/auth/v1/authorize?provider=google"));
+
+        Result<String> result = viewModel.getGoogleSignInUrl();
+
+        assertTrue(result.isSuccess());
+        verify(completeGoogleSignInUseCase).getSignInUrl(AuthViewModel.OAUTH_REDIRECT_URI);
+    }
+
+    @Test
+    public void completeGoogleSignIn_success_publishesUserAndSyncs() {
+        UserModel user = new UserModel("g1", "khoi@gmail.com", "Khoi", "khoi");
+        when(completeGoogleSignInUseCase.execute("expensetracker://auth-callback#access_token=t"))
+                .thenReturn(Result.success(user));
+
+        viewModel.completeGoogleSignIn("expensetracker://auth-callback#access_token=t");
+
+        assertTrue(viewModel.getAuthState().getValue().isSuccess());
+        assertEquals("khoi@gmail.com", viewModel.getAuthState().getValue().getData().getEmail());
+        verify(syncScheduler).requestSync();
+    }
+
+    @Test
+    public void completeGoogleSignIn_withUnsyncedData_waitsForMergeChoice() {
+        UserModel user = new UserModel("g1", "khoi@gmail.com", "Khoi", "khoi");
+        when(completeGoogleSignInUseCase.execute("expensetracker://auth-callback#access_token=t"))
+                .thenReturn(Result.success(user));
+        when(getSyncStatusUseCase.unsyncedTransactions()).thenReturn(2);
+
+        viewModel.completeGoogleSignIn("expensetracker://auth-callback#access_token=t");
+
+        assertEquals(2, viewModel.getUnsyncedOnSignIn());
+        verify(syncScheduler, never()).requestSync();
+        verify(syncScheduler).cancelAll();
     }
 }

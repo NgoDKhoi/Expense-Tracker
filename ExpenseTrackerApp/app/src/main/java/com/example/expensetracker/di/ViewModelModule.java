@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 import com.example.expensetracker.viewmodel.AddTransactionViewModel;
 import com.example.expensetracker.viewmodel.AuthViewModel;
+import com.example.expensetracker.viewmodel.GamificationViewModel;
 import com.example.expensetracker.viewmodel.HomeViewModel;
 import dagger.Binds;
 import dagger.Module;
@@ -26,6 +27,11 @@ public abstract class ViewModelModule {
     @IntoMap
     @ViewModelKey(AuthViewModel.class)
     abstract ViewModel bindAuthViewModel(AuthViewModel viewModel);
+
+    @Binds
+    @IntoMap
+    @ViewModelKey(GamificationViewModel.class)
+    abstract ViewModel bindGamificationViewModel(GamificationViewModel viewModel);
 
     @Binds
     abstract ViewModelProvider.Factory bindViewModelFactory(DaggerViewModelFactory factory);

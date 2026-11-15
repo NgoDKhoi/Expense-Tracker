@@ -1,8 +1,11 @@
 package com.example.expensetracker.core.network.di;
 
+import com.example.expensetracker.core.domain.repository.IAiChatRepository;
 import com.example.expensetracker.core.domain.repository.IAuthRepository;
 import com.example.expensetracker.core.domain.repository.ISyncRemote;
 import com.example.expensetracker.core.network.BuildConfig;
+import com.example.expensetracker.core.network.ai.GeminiApi;
+import com.example.expensetracker.core.network.ai.GeminiChatRepositoryImpl;
 import com.example.expensetracker.core.network.auth.AuthRepositoryImpl;
 import com.example.expensetracker.core.network.auth.SupabaseAuthApi;
 import com.example.expensetracker.core.network.sync.SupabaseSyncApi;
@@ -30,6 +33,10 @@ public abstract class NetworkModule {
     @Singleton
     abstract ISyncRemote bindSyncRemote(SupabaseSyncRemote impl);
 
+    @Binds
+    @Singleton
+    abstract IAiChatRepository bindAiChatRepository(GeminiChatRepositoryImpl impl);
+
     // Retrofit stays inside these methods so modules depending on :core:network don't need it on their classpath.
     @Provides
     @Singleton
@@ -42,6 +49,17 @@ public abstract class NetworkModule {
     @Singleton
     static SupabaseSyncApi provideSupabaseSyncApi() {
         return retrofit(new GsonBuilder().serializeNulls().create()).create(SupabaseSyncApi.class);
+    }
+
+    @Provides
+    @Singleton
+    static GeminiApi provideGeminiApi() {
+        return new Retrofit.Builder()
+                .baseUrl("https://generativelanguage.googleapis.com/")
+                .client(new OkHttpClient.Builder().build())
+                .addConverterFactory(GsonConverterFactory.create(new Gson()))
+                .build()
+                .create(GeminiApi.class);
     }
 
     private static Retrofit retrofit(Gson gson) {

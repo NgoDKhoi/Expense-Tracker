@@ -52,8 +52,8 @@ public class DashboardFragment extends Fragment {
                 selectedFragment = new HistoryFragment();
                 if (fabPetAi != null) fabPetAi.show();
             } else if (itemId == R.id.nav_ai) {
-                selectedFragment = new AiAssistantFragment();
-                if (fabPetAi != null) fabPetAi.hide();
+                selectedFragment = new LeaderboardFragment();
+                if (fabPetAi != null) fabPetAi.show();
             }
 
             if (selectedFragment != null) {
@@ -70,7 +70,16 @@ public class DashboardFragment extends Fragment {
         }
 
         if (fabPetAi != null) {
-            fabPetAi.setOnClickListener(v -> bottomNav.setSelectedItemId(R.id.nav_ai));
+            fabPetAi.setOnClickListener(v -> {
+                if (requireActivity().getSupportFragmentManager().findFragmentByTag(AiAssistantFragment.TAG) != null) {
+                    return;
+                }
+                requireActivity().getSupportFragmentManager().beginTransaction()
+                        .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
+                        .add(android.R.id.content, new AiAssistantFragment(), AiAssistantFragment.TAG)
+                        .addToBackStack(null)
+                        .commit();
+            });
         }
     }
 }

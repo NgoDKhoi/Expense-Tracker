@@ -19,6 +19,13 @@ import com.example.expensetracker.core.network.auth.dto.UsernameRequest;
 import com.example.expensetracker.core.network.auth.dto.VerifyRequest;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.function.LongSupplier;
 
 import javax.inject.Inject;
@@ -215,24 +222,186 @@ public class AuthRepositoryImpl implements IAuthRepository {
         }
     }
 
+    @Override
+    public Result<String> getGoogleSignInUrl(String redirectUri) {
+        if (!isConfigured()) return Result.error(AuthErrorMapper.NOT_CONFIGURED, null);
+        if (isBlank(redirectUri)) return Result.error("Thiếu địa chỉ chuyển hướng xác thực", null);
+        String base = BuildConfig.SUPABASE_URL.endsWith("/")
+                ? BuildConfig.SUPABASE_URL
+                : BuildConfig.SUPABASE_URL + "/";
+        String encodedRedirect = urlEncode(redirectUri.trim());
+        return Result.success(base + "auth/v1/authorize?provider=google&redirect_to="
+                + encodedRedirect + "&prompt=select_account");
+    }
+
+    @Override
+    public Result<UserModel> completeOAuthSignIn(String callbackUri) {
+        if (!isConfigured()) return Result.error(AuthErrorMapper.NOT_CONFIGURED, null);
+        if (isBlank(callbackUri)) return Result.error("Không nhận được phản hồi đăng nhập từ Google", null);
+
+        Map<String, String> params = parseCallbackParams(callbackUri);
+        String errorDescription = params.get("error_description");
+        String error = params.get("error");
+        if (!isBlank(errorDescription)) {
+            return Result.error(errorDescription.trim(), null);
+        }
+        if (!isBlank(error)) {
+            return Result.error("Đăng nhập Google thất bại: " + error.trim(), null);
+        }
+
+        String accessToken = params.get("access_token");
+        String refreshToken = params.get("refresh_token");
+        if (isBlank(accessToken) || isBlank(refreshToken)) {
+            return Result.error("Không nhận được phiên đăng nhập từ Google", null);
+        }
+
+        long expiresAt = resolveExpiresAt(params, clock.getAsLong());
+        try {
+            Response<AuthResponse.User> userResponse = api.getUser("Bearer " + accessToken).execute();
+            if (!userResponse.isSuccessful()) {
+                return Result.error(errorMessage(userResponse), null);
+            }
+            AuthResponse.User user = userResponse.body();
+            if (user == null || isBlank(user.id)) {
+                return Result.error("Phản hồi người dùng không hợp lệ", null);
+            }
+            AuthResponse body = new AuthResponse();
+            body.accessToken = accessToken;
+            body.refreshToken = refreshToken;
+            body.expiresAt = expiresAt;
+            body.user = user;
+            return Result.success(saveSession(body));
+        } catch (IOException e) {
+            return Result.error(AuthErrorMapper.NETWORK, e);
+        }
+    }
+
     private static <T> Result<T> codeNeeded(String email) {
         return Result.error("Nhập mã xác nhận đã gửi tới " + email, new EmailNotConfirmedException(email));
     }
 
     private UserModel saveSession(AuthResponse body) {
         AuthResponse.Metadata meta = body.user.userMetadata;
-        String displayName = meta != null && meta.displayName != null ? meta.displayName : "";
-        String username = meta != null && meta.username != null ? meta.username : "";
+        String email = body.user.email != null ? body.user.email : "";
+        String displayName = resolveDisplayName(meta, email);
+        String username = resolveUsername(meta, email);
         prefs.edit()
                 .putString(KEY_ACCESS_TOKEN, body.accessToken)
                 .putString(KEY_REFRESH_TOKEN, body.refreshToken)
                 .putLong(KEY_EXPIRES_AT, body.expiresAt)
                 .putString(KEY_USER_ID, body.user.id)
-                .putString(KEY_EMAIL, body.user.email)
+                .putString(KEY_EMAIL, email)
                 .putString(KEY_DISPLAY_NAME, displayName)
                 .putString(KEY_USERNAME, username)
                 .apply();
-        return new UserModel(body.user.id, body.user.email, displayName, username);
+        return new UserModel(body.user.id, email, displayName, username);
+    }
+
+    private static String resolveDisplayName(AuthResponse.Metadata meta, String email) {
+        if (meta != null) {
+            if (!isBlank(meta.displayName)) return meta.displayName.trim();
+            if (!isBlank(meta.fullName)) return meta.fullName.trim();
+            if (!isBlank(meta.name)) return meta.name.trim();
+        }
+        return emailLocalPart(email);
+    }
+
+    private static String resolveUsername(AuthResponse.Metadata meta, String email) {
+        if (meta != null && !isBlank(meta.username)) {
+            return meta.username.trim();
+        }
+        return deriveUsernameFromEmail(email);
+    }
+
+    static String deriveUsernameFromEmail(String email) {
+        String local = emailLocalPart(email).toLowerCase(Locale.ROOT);
+        if (local.isEmpty()) return "";
+        String normalized = local.replaceAll("[^a-z0-9_]+", "_")
+                .replaceAll("_+", "_")
+                .replaceAll("^_+|_+$", "");
+        if (normalized.length() > 20) {
+            return normalized.substring(0, 20);
+        }
+        return normalized;
+    }
+
+    private static String emailLocalPart(String email) {
+        if (isBlank(email)) return "";
+        int at = email.indexOf('@');
+        return (at > 0 ? email.substring(0, at) : email).trim();
+    }
+
+    static Map<String, String> parseCallbackParams(String callbackUri) {
+        Map<String, String> params = new HashMap<>();
+        if (callbackUri == null) return params;
+
+        int hashIndex = callbackUri.indexOf('#');
+        int queryIndex = callbackUri.indexOf('?');
+
+        if (queryIndex >= 0 && (hashIndex < 0 || queryIndex < hashIndex)) {
+            String query = hashIndex >= 0
+                    ? callbackUri.substring(queryIndex + 1, hashIndex)
+                    : callbackUri.substring(queryIndex + 1);
+            collectEncodedPairs(query, params);
+        }
+        if (hashIndex >= 0 && hashIndex + 1 < callbackUri.length()) {
+            collectEncodedPairs(callbackUri.substring(hashIndex + 1), params);
+        }
+        return params;
+    }
+
+    private static void collectEncodedPairs(String raw, Map<String, String> out) {
+        if (raw == null || raw.isEmpty()) return;
+        for (String pair : raw.split("&")) {
+            if (pair.isEmpty()) continue;
+            int eq = pair.indexOf('=');
+            String key = urlDecode(eq >= 0 ? pair.substring(0, eq) : pair);
+            String value = eq >= 0 ? urlDecode(pair.substring(eq + 1)) : "";
+            if (!key.isEmpty()) {
+                out.put(key, value);
+            }
+        }
+    }
+
+    private static long resolveExpiresAt(Map<String, String> params, long nowMillis) {
+        long nowSeconds = nowMillis / 1000;
+        String expiresAtStr = params.get("expires_at");
+        if (!isBlank(expiresAtStr)) {
+            try {
+                return Long.parseLong(expiresAtStr.trim());
+            } catch (NumberFormatException ignored) {
+                // Fall back to expires_in.
+            }
+        }
+        String expiresInStr = params.get("expires_in");
+        if (!isBlank(expiresInStr)) {
+            try {
+                return nowSeconds + Long.parseLong(expiresInStr.trim());
+            } catch (NumberFormatException ignored) {
+                // Fall back to default TTL.
+            }
+        }
+        return nowSeconds + 3600;
+    }
+
+    private static String urlEncode(String value) {
+        try {
+            return URLEncoder.encode(value, StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException("UTF-8 encoding unavailable", e);
+        }
+    }
+
+    private static String urlDecode(String value) {
+        try {
+            return URLDecoder.decode(value, StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException | IllegalArgumentException e) {
+            return value;
+        }
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     private static String errorMessage(Response<?> response) {

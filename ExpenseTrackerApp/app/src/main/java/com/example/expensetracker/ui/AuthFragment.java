@@ -1,5 +1,8 @@
 package com.example.expensetracker.ui;
 
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -18,6 +21,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.expensetracker.ExpenseTrackerApplication;
 import com.example.expensetracker.R;
+import com.example.expensetracker.core.domain.Result;
 import com.example.expensetracker.viewmodel.AuthViewModel;
 import com.example.expensetracker.viewmodel.AuthViewModel.CodeStep;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
@@ -42,15 +46,27 @@ public class AuthFragment extends BottomSheetDialogFragment {
 
     /** Fragment result key sent whenever the signed-in user changes. */
     public static final String RESULT_AUTH_CHANGED = "auth_changed";
+    private static final String ARG_OAUTH_CALLBACK = "arg_oauth_callback";
 
     // Supabase refuses a new email for the same address within 60 seconds.
     private static final long RESEND_COOLDOWN_MS = 60_000;
+
+    public static AuthFragment newInstanceWithCallback(@NonNull String callbackUri) {
+        AuthFragment fragment = new AuthFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_OAUTH_CALLBACK, callbackUri);
+        fragment.setArguments(args);
+        return fragment;
+    }
 
     @Inject
     ViewModelProvider.Factory viewModelFactory;
     private AuthViewModel viewModel;
 
     private boolean signUpMode = false;
+    private boolean oauthInProgress = false;
+    @Nullable
+    private String pendingOAuthCallback;
     @Nullable
     private CodeStep codeStep;
     @Nullable
@@ -76,6 +92,8 @@ public class AuthFragment extends BottomSheetDialogFragment {
     private TextInputEditText etConfirm;
     private TextInputEditText etCode;
     private MaterialButton btnSubmit;
+    private MaterialButton btnGoogleSignIn;
+    private View groupSocialAuth;
     private View btnForgot;
     private View btnCodeBack;
     private View progress;
@@ -135,6 +153,8 @@ public class AuthFragment extends BottomSheetDialogFragment {
         etConfirm = view.findViewById(R.id.et_confirm_password);
         etCode = view.findViewById(R.id.et_code);
         btnSubmit = view.findViewById(R.id.btn_auth_submit);
+        btnGoogleSignIn = view.findViewById(R.id.btn_google_sign_in);
+        groupSocialAuth = view.findViewById(R.id.group_social_auth);
         btnForgot = view.findViewById(R.id.btn_forgot_password);
         btnCodeBack = view.findViewById(R.id.btn_code_back);
         progress = view.findViewById(R.id.progress_auth);
@@ -144,6 +164,7 @@ public class AuthFragment extends BottomSheetDialogFragment {
         setSignUpMode(false);
 
         btnSubmit.setOnClickListener(v -> submit());
+        btnGoogleSignIn.setOnClickListener(v -> startGoogleSignIn());
         btnForgot.setOnClickListener(v -> {
             clearErrors();
             viewModel.resetPassword(text(etEmail));
@@ -164,12 +185,24 @@ public class AuthFragment extends BottomSheetDialogFragment {
             setLoading(result.isLoading());
             if (result.isSuccess()) {
                 Toast.makeText(requireContext(), successMessage(), Toast.LENGTH_SHORT).show();
+                oauthInProgress = false;
                 int onDevice = viewModel.getUnsyncedOnSignIn();
                 if (onDevice > 0) askMergeLocalData(onDevice); else finishAuth();
             } else if (result.isError()) {
+                oauthInProgress = false;
                 showMessage(result.getMessage());
             }
         });
+
+        String initialCallback = pendingOAuthCallback;
+        pendingOAuthCallback = null;
+        if (initialCallback == null && getArguments() != null && getArguments().containsKey(ARG_OAUTH_CALLBACK)) {
+            initialCallback = getArguments().getString(ARG_OAUTH_CALLBACK);
+            getArguments().remove(ARG_OAUTH_CALLBACK);
+        }
+        if (initialCallback != null && !initialCallback.isEmpty()) {
+            handleOAuthCallback(initialCallback);
+        }
 
         viewModel.getResetState().observe(getViewLifecycleOwner(), result -> {
             if (result == null) return;
@@ -223,6 +256,7 @@ public class AuthFragment extends BottomSheetDialogFragment {
         btnForgot.setVisibility(signUp ? View.GONE : View.VISIBLE);
         tilCode.setVisibility(View.GONE);
         groupCodeActions.setVisibility(View.GONE);
+        groupSocialAuth.setVisibility(View.VISIBLE);
         btnSubmit.setText(submitLabel());
         clearErrors();
     }
@@ -243,6 +277,7 @@ public class AuthFragment extends BottomSheetDialogFragment {
         tilUsername.setVisibility(View.GONE);
         tilEmail.setVisibility(View.GONE);
         btnForgot.setVisibility(View.GONE);
+        groupSocialAuth.setVisibility(View.GONE);
         tilCode.setVisibility(View.VISIBLE);
         groupCodeActions.setVisibility(View.VISIBLE);
         // A reset sets the new password in the same step, reusing the password fields.
@@ -291,7 +326,35 @@ public class AuthFragment extends BottomSheetDialogFragment {
         }
     }
 
+    private void startGoogleSignIn() {
+        clearErrors();
+        Result<String> urlResult = viewModel.getGoogleSignInUrl();
+        if (urlResult.isError() || urlResult.getData() == null) {
+            showMessage(urlResult.getMessage());
+            return;
+        }
+        try {
+            oauthInProgress = true;
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(urlResult.getData())));
+        } catch (ActivityNotFoundException e) {
+            oauthInProgress = false;
+            showMessage(getString(R.string.error_browser_unavailable));
+        }
+    }
+
+    public void handleOAuthCallback(@NonNull String callbackUri) {
+        if (viewModel == null) {
+            pendingOAuthCallback = callbackUri;
+            return;
+        }
+        oauthInProgress = true;
+        viewModel.completeGoogleSignIn(callbackUri);
+    }
+
     private int successMessage() {
+        if (oauthInProgress) {
+            return R.string.msg_sign_in_success;
+        }
         if (codeStep != null) {
             return codeStep.kind == CodeStep.Kind.RESET ? R.string.msg_password_changed : R.string.msg_email_confirmed;
         }
@@ -318,6 +381,7 @@ public class AuthFragment extends BottomSheetDialogFragment {
             btnSubmit.setText(submitLabel());
         }
         btnSubmit.setEnabled(!loading);
+        if (btnGoogleSignIn != null) btnGoogleSignIn.setEnabled(!loading);
         btnForgot.setEnabled(!loading);
         btnModeSignIn.setEnabled(!loading);
         btnModeSignUp.setEnabled(!loading);

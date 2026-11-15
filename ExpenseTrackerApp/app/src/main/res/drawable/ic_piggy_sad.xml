@@ -1,0 +1,55 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Left & Right Ears -->
+    <path
+        android:fillColor="#EF5350"
+        android:pathData="M5.5,5.5L8.5,8.2L5.2,9.8Z" />
+    <path
+        android:fillColor="#EF5350"
+        android:pathData="M18.5,5.5L15.5,8.2L18.8,9.8Z" />
+    <!-- Piggy Round Head -->
+    <path
+        android:fillColor="#E57373"
+        android:pathData="M12,6.5C7.6,6.5 4,9.8 4,13.8C4,17.8 7.6,21 12,21C16.4,21 20,17.8 20,13.8C20,9.8 16.4,6.5 12,6.5Z" />
+    <!-- Bandage on Forehead -->
+    <path
+        android:fillColor="#FFF59D"
+        android:pathData="M13.2,8.1L16.4,9.8L15.6,11.3L12.4,9.6Z" />
+    <!-- Drooping Sad Eyes -->
+    <path
+        android:strokeColor="#212121"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M7.5,11.8C8.1,12.7 9.3,12.7 9.9,11.8" />
+    <path
+        android:strokeColor="#212121"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M14.1,11.8C14.7,12.7 15.9,12.7 16.5,11.8" />
+    <!-- Tear Drop -->
+    <path
+        android:fillColor="#81D4FA"
+        android:pathData="M7.4,13.2C7.4,13.2 8.4,14.6 8.4,15.3C8.4,15.9 7.9,16.4 7.4,16.4C6.9,16.4 6.4,15.9 6.4,15.3C6.4,14.6 7.4,13.2 7.4,13.2Z" />
+    <!-- Snout -->
+    <path
+        android:fillColor="#D32F2F"
+        android:pathData="M12,13.5C10.1,13.5 8.6,14.6 8.6,15.9C8.6,17.2 10.1,18.3 12,18.3C13.9,18.3 15.4,17.2 15.4,15.9C15.4,14.6 13.9,13.5 12,13.5Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M10.7,15.9m-0.7,0a0.7,0.7 0 1,1 1.4,0a0.7,0.7 0 1,1 -1.4,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M13.3,15.9m-0.7,0a0.7,0.7 0 1,1 1.4,0a0.7,0.7 0 1,1 -1.4,0" />
+    <!-- Frown Mouth -->
+    <path
+        android:strokeColor="#212121"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M10.2,19.6C11.1,18.8 12.9,18.8 13.8,19.6" />
+</vector>

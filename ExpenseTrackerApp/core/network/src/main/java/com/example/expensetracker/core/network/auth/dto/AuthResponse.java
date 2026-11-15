@@ -30,6 +30,11 @@ public class AuthResponse {
         @SerializedName("display_name")
         public String displayName;
 
+        @SerializedName("full_name")
+        public String fullName;
+
+        public String name;
+
         public String username;
     }
 }

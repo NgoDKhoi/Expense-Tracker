@@ -14,6 +14,6 @@
         android:title="History" />
     <item
         android:id="@+id/nav_ai"
-        android:icon="@drawable/ic_pet_mascot"
-        android:title="AI Assistant" />
+        android:icon="@drawable/ic_trophy"
+        android:title="@string/nav_leaderboard" />
 </menu>

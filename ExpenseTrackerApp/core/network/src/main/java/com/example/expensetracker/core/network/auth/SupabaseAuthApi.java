@@ -12,6 +12,7 @@ import com.example.expensetracker.core.network.auth.dto.VerifyRequest;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
@@ -40,6 +41,9 @@ public interface SupabaseAuthApi {
 
     @PUT("auth/v1/user")
     Call<Void> updateUser(@Header("Authorization") String bearerToken, @Body PasswordRequest body);
+
+    @GET("auth/v1/user")
+    Call<AuthResponse.User> getUser(@Header("Authorization") String bearerToken);
 
     @POST("auth/v1/logout")
     Call<Void> logout(@Header("Authorization") String bearerToken);

@@ -102,6 +102,9 @@
     <string name="auth_tab_sign_up">Đăng ký</string>
     <string name="auth_btn_sign_up">Tạo tài khoản</string>
     <string name="auth_forgot_password">Quên mật khẩu?</string>
+    <string name="auth_or_divider">HOẶC</string>
+    <string name="auth_btn_google">Tiếp tục với Google</string>
+    <string name="error_browser_unavailable">Không mở được trình duyệt để đăng nhập Google</string>
     <string name="hint_display_name">Tên hiển thị</string>
     <string name="hint_username">Tên đăng nhập</string>
     <string name="helper_username">3–20 ký tự: chữ không dấu, số hoặc dấu _</string>
@@ -150,4 +153,46 @@
     <string name="msg_sync_done">Đã đồng bộ</string>
     <string name="cd_back">Quay lại</string>
     <string name="cd_account">Tài khoản</string>
+
+    <!-- Gamification: Virtual Piggy Pet & Leaderboard -->
+    <string name="piggy_screen_title">HEO TIẾT KIỆM &amp; XẾP HẠNG</string>
+    <string name="piggy_streak_badge">Chuỗi %1$d ngày</string>
+    <string name="piggy_total_days_badge">%1$d ngày đạt chuẩn</string>
+    <string name="piggy_mood_happy">Vui vẻ • Trong hạn mức</string>
+    <string name="piggy_mood_worried">Lo lắng • Sắp chạm trần</string>
+    <string name="piggy_mood_sad">Buồn bã • Vượt hạn mức</string>
+    <string name="piggy_level_baby">Cấp 1 • Heo Con</string>
+    <string name="piggy_level_student">Cấp 2 • Heo Đi Học</string>
+    <string name="piggy_level_adult">Cấp 3 • Heo Trưởng Thành</string>
+    <string name="piggy_level_royal">Cấp 4 • Heo Hoàng Gia 👑</string>
+    <string name="piggy_daily_budget_label">Chi tiêu hôm nay / Hạn mức ngày</string>
+    <string name="piggy_tap_hint">Chạm vào Heo để nhận lời khuyên!</string>
+    <string name="piggy_demo_title">Bộ giả lập trạng thái (Prototype)</string>
+    <string name="piggy_demo_happy">Tiêu 45k (Vui)</string>
+    <string name="piggy_demo_worried">Tiêu 90k (Lo lắng)</string>
+    <string name="piggy_demo_sad">Tiêu 135k (Vượt mức)</string>
+    <string name="piggy_demo_evolve">Tăng Streak (+15 ngày)</string>
+    <string name="leaderboard_title">Bảng Xếp Hạng Tiết Kiệm</string>
+    <string name="leaderboard_mode_streak">Chuỗi liên tục</string>
+    <string name="leaderboard_mode_total_days">Tổng ngày đạt</string>
+    <string name="leaderboard_scope_global">Toàn cầu</string>
+    <string name="leaderboard_scope_friends">Bạn bè</string>
+    <string name="leaderboard_score_days">%1$d ngày</string>
+    <string name="leaderboard_you_suffix"> (Bạn)</string>
+    <string name="nav_leaderboard">Xếp hạng</string>
+    <string name="leaderboard_your_standing_title">Vị trí của bạn hiện tại</string>
+    <string name="leaderboard_your_rank_format">Hạng #%1$d</string>
+    <string name="piggy_edit_limit_action">Đổi hạn mức</string>
+    <string name="dialog_daily_limit_title">Hạn mức chi tiêu ngày</string>
+    <string name="dialog_daily_limit_hint">0 ₫</string>
+    <string name="msg_daily_limit_updated">Đã cập nhật hạn mức chi tiêu ngày</string>
+    <string name="msg_invalid_amount">Vui lòng nhập số tiền hợp lệ</string>
+    <string name="piggy_chat_section_title">Trò chuyện cùng Heo AI</string>
+    <string name="piggy_chat_typing">Heo đang suy nghĩ…</string>
+    <string name="piggy_chat_input_hint">Hỏi Heo Đất…</string>
+    <string name="cd_send_message">Gửi</string>
+    <string name="chip_prompt_today">📊 Phân tích hôm nay</string>
+    <string name="chip_prompt_top_category">🔥 Danh mục tốn nhất</string>
+    <string name="chip_prompt_streak_tips">💡 Mẹo giữ Streak</string>
+    <string name="chip_prompt_wallet_health">🐷 Sức khỏe ví</string>
 </resources>

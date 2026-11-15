@@ -1,6 +1,7 @@
 package com.example.expensetracker.di;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 
 import com.example.expensetracker.core.domain.repository.ISyncScheduler;
 import com.example.expensetracker.sync.WorkManagerSyncScheduler;
@@ -21,6 +22,12 @@ public class AppModule {
     @Singleton
     Context provideContext() {
         return context;
+    }
+
+    @Provides
+    @Singleton
+    SharedPreferences provideSharedPreferences(Context context) {
+        return context.getSharedPreferences("expense_tracker_prefs", Context.MODE_PRIVATE);
     }
 
     @Provides

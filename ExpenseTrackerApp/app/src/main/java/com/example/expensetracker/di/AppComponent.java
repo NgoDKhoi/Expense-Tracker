@@ -16,6 +16,7 @@ import com.example.expensetracker.ui.CameraHostFragment;
 import com.example.expensetracker.ui.DashboardFragment;
 import com.example.expensetracker.ui.DashboardOverviewFragment;
 import com.example.expensetracker.ui.HistoryFragment;
+import com.example.expensetracker.ui.LeaderboardFragment;
 import com.example.expensetracker.ui.PhotosFragment;
 import com.example.expensetracker.ui.ReceiptDetailFragment;
 import com.example.expensetracker.ui.SettingsFragment;
@@ -46,6 +47,7 @@ public interface AppComponent {
     void inject(DashboardFragment fragment);
     void inject(DashboardOverviewFragment fragment);
     void inject(HistoryFragment fragment);
+    void inject(LeaderboardFragment fragment);
     void inject(PhotosFragment fragment);
     void inject(ReceiptDetailFragment fragment);
     void inject(SettingsFragment fragment);
