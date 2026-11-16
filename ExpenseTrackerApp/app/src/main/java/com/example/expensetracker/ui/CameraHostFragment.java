@@ -84,7 +84,8 @@ public class CameraHostFragment extends Fragment {
                         record.getCategory(),
                         record.getImageUri(),
                         time,
-                        record.getNote()
+                        record.getNote(),
+                        record.getType()
                 );
             }
         }

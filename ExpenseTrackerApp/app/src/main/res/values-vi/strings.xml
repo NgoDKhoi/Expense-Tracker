@@ -195,4 +195,10 @@
     <string name="chip_prompt_top_category">🔥 Danh mục tốn nhất</string>
     <string name="chip_prompt_streak_tips">💡 Mẹo giữ Streak</string>
     <string name="chip_prompt_wallet_health">🐷 Sức khỏe ví</string>
+    <string name="voice_prompt_hint">Nói khoản thu/chi, VD: Ăn trưa 45k</string>
+    <string name="voice_fallback_dialog_title">Nhập nhanh thông minh</string>
+    <string name="voice_fallback_input_hint">VD: Ăn phở 45k, Lương 15 triệu</string>
+    <string name="error_gallery_copy_failed">Không thể tải ảnh đã chọn</string>
+    <string name="type_expense_label">Chi tiêu</string>
+    <string name="type_income_label">Thu nhập</string>
 </resources>

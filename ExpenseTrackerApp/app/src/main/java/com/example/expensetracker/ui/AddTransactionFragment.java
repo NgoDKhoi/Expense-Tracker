@@ -1,8 +1,12 @@
 package com.example.expensetracker.ui;
 
+import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.text.InputType;
 import android.view.LayoutInflater;
@@ -16,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.PickVisualMediaRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -33,6 +38,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.expensetracker.ExpenseTrackerApplication;
 import com.example.expensetracker.R;
+import com.example.expensetracker.core.domain.model.CategoryModel;
 import com.example.expensetracker.core.domain.model.UserModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
 import com.example.expensetracker.viewmodel.AddTransactionViewModel;
@@ -40,8 +46,13 @@ import com.example.expensetracker.viewmodel.AuthViewModel;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -72,6 +83,8 @@ public class AddTransactionFragment extends Fragment {
     
     private long selectedWalletId = -1;
     private List<WalletModel> cachedWallets;
+    private List<CategoryModel> cachedExpenseCategories = new ArrayList<>();
+    private List<CategoryModel> cachedIncomeCategories = new ArrayList<>();
     private View btnCapture;
     
     private ImageButton btnFlash, btnFlipCamera;
@@ -85,6 +98,25 @@ public class AddTransactionFragment extends Fragment {
                     startCamera();
                 } else {
                     Toast.makeText(requireContext(), "Camera permission is required", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+    private final ActivityResultLauncher<PickVisualMediaRequest> pickMediaLauncher = registerForActivityResult(
+            new ActivityResultContracts.PickVisualMedia(),
+            uri -> {
+                if (uri != null) {
+                    importGalleryImageAndOpenForm(uri);
+                }
+            });
+
+    private final ActivityResultLauncher<Intent> voiceInputLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    ArrayList<String> matches = result.getData().getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    if (matches != null && !matches.isEmpty() && matches.get(0) != null && !matches.get(0).trim().isEmpty()) {
+                        handleSpokenExpenseText(matches.get(0));
+                    }
                 }
             });
 
@@ -129,15 +161,24 @@ public class AddTransactionFragment extends Fragment {
 
         ImageButton btnVoiceInput = view.findViewById(R.id.btn_voice_input);
         if (btnVoiceInput != null) {
-            btnVoiceInput.setOnClickListener(v ->
-                    Toast.makeText(requireContext(), "Tính năng nhập bằng giọng nói sẽ sớm ra mắt", Toast.LENGTH_SHORT).show());
+            btnVoiceInput.setOnClickListener(v -> launchVoiceInput());
         }
 
         ImageButton btnGallery = view.findViewById(R.id.btn_gallery);
         if (btnGallery != null) {
-            btnGallery.setOnClickListener(v ->
-                    Toast.makeText(requireContext(), "Tính năng chọn ảnh từ thư viện sẽ sớm ra mắt", Toast.LENGTH_SHORT).show());
+            btnGallery.setOnClickListener(v -> pickMediaLauncher.launch(
+                    new PickVisualMediaRequest.Builder()
+                            .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
+                            .build()
+            ));
         }
+
+        viewModel.getCategories("EXPENSE").observe(getViewLifecycleOwner(), categories -> {
+            cachedExpenseCategories = categories != null ? categories : new ArrayList<>();
+        });
+        viewModel.getCategories("INCOME").observe(getViewLifecycleOwner(), categories -> {
+            cachedIncomeCategories = categories != null ? categories : new ArrayList<>();
+        });
 
         btnFlipCamera.setOnClickListener(v -> {
             lensFacing = (lensFacing == CameraSelector.LENS_FACING_BACK) 
@@ -185,7 +226,7 @@ public class AddTransactionFragment extends Fragment {
                 PopupMenu popupMenu = new PopupMenu(requireContext(), tvWalletBalanceHeader);
                 for (int i = 0; i < cachedWallets.size(); i++) {
                     WalletModel wallet = cachedWallets.get(i);
-                    String menuItemTitle = wallet.getName() + " - " + formatFullCurrency(wallet.getBalance());
+                    String menuItemTitle = wallet.getName() + ": " + formatFullCurrency(wallet.getBalance());
                     popupMenu.getMenu().add(0, i, i, menuItemTitle);
                 }
                 popupMenu.setOnMenuItemClickListener(item -> {
@@ -373,14 +414,10 @@ public class AddTransactionFragment extends Fragment {
             @Override
             public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
                 requireActivity().runOnUiThread(() -> {
-                    String savedImageUri = Uri.fromFile(photoFile).toString();
-                    
-                    // Launch TransactionFormFragment over the camera
-                    requireActivity().getSupportFragmentManager().beginTransaction()
-                            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
-                            .add(android.R.id.content, TransactionFormFragment.newInstance(savedImageUri, selectedWalletId))
-                            .addToBackStack(null)
-                            .commit();
+                    if (isAdded()) {
+                        String savedImageUri = Uri.fromFile(photoFile).toString();
+                        openTransactionForm(TransactionFormFragment.newInstance(savedImageUri, selectedWalletId));
+                    }
                 });
             }
 
@@ -391,6 +428,82 @@ public class AddTransactionFragment extends Fragment {
                 });
             }
         });
+    }
+
+    private void launchVoiceInput() {
+        try {
+            voiceInputLauncher.launch(VoiceInputHelper.createSpeechIntent(requireContext()));
+        } catch (ActivityNotFoundException e) {
+            VoiceInputHelper.showTextFallbackDialog(requireContext(), this::handleSpokenExpenseText);
+        }
+    }
+
+    private void handleSpokenExpenseText(String text) {
+        List<CategoryModel> combinedCategories = new ArrayList<>(cachedExpenseCategories);
+        combinedCategories.addAll(cachedIncomeCategories);
+        AddTransactionViewModel.ParsedVoiceExpense parsed =
+                AddTransactionViewModel.parseVoiceInput(text, combinedCategories);
+        openTransactionForm(
+                TransactionFormFragment.newVoiceInstance(
+                        selectedWalletId,
+                        parsed.amount,
+                        parsed.type,
+                        parsed.category,
+                        parsed.note,
+                        parsed.dayOffset
+                )
+        );
+    }
+
+    private void importGalleryImageAndOpenForm(@NonNull Uri sourceUri) {
+        if (!isAdded()) return;
+        final android.content.Context appContext = requireContext().getApplicationContext();
+        cameraExecutor.execute(() -> {
+            File outputDirectory = new File(appContext.getFilesDir(), "expense_images");
+            if (!outputDirectory.exists()) {
+                outputDirectory.mkdirs();
+            }
+            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.getDefault()).format(new Date());
+            File destFile = new File(outputDirectory, "IMG_" + timestamp + ".jpg");
+
+            try (InputStream in = appContext.getContentResolver().openInputStream(sourceUri);
+                 OutputStream out = new FileOutputStream(destFile)) {
+                if (in == null) {
+                    throw new IOException("Null input stream for URI: " + sourceUri);
+                }
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, read);
+                }
+                out.flush();
+                String savedUri = Uri.fromFile(destFile).toString();
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        if (isAdded()) {
+                            openTransactionForm(TransactionFormFragment.newInstance(savedUri, selectedWalletId));
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                Log.e("AddTransactionFragment", "Failed to copy gallery image", e);
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        if (isAdded()) {
+                            Toast.makeText(requireContext(), R.string.error_gallery_copy_failed, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    private void openTransactionForm(@NonNull Fragment formFragment) {
+        requireActivity().getSupportFragmentManager().beginTransaction()
+                .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
+                .add(android.R.id.content, formFragment)
+                .addToBackStack(null)
+                .commit();
     }
 
     @Override

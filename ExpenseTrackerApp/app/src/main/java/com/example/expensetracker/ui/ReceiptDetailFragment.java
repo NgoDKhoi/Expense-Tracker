@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import com.bumptech.glide.Glide;
 import com.example.expensetracker.R;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -22,14 +23,20 @@ public class ReceiptDetailFragment extends Fragment {
     private static final String ARG_IMAGE_URI = "arg_image_uri";
     private static final String ARG_TIMESTAMP = "arg_timestamp";
     private static final String ARG_NOTE = "arg_note";
+    private static final String ARG_TYPE = "arg_type";
 
     private double amount;
     private String category;
     private String imageUri;
     private long timestamp;
     private String note;
+    private String type = "EXPENSE";
 
     public static ReceiptDetailFragment newInstance(double amount, String category, String imageUri, long timestamp, String note) {
+        return newInstance(amount, category, imageUri, timestamp, note, "EXPENSE");
+    }
+
+    public static ReceiptDetailFragment newInstance(double amount, String category, String imageUri, long timestamp, String note, String type) {
         ReceiptDetailFragment fragment = new ReceiptDetailFragment();
         Bundle args = new Bundle();
         args.putDouble(ARG_AMOUNT, amount);
@@ -37,6 +44,7 @@ public class ReceiptDetailFragment extends Fragment {
         args.putString(ARG_IMAGE_URI, imageUri);
         args.putLong(ARG_TIMESTAMP, timestamp);
         args.putString(ARG_NOTE, note);
+        args.putString(ARG_TYPE, type != null ? type : "EXPENSE");
         fragment.setArguments(args);
         return fragment;
     }
@@ -50,6 +58,7 @@ public class ReceiptDetailFragment extends Fragment {
             imageUri = getArguments().getString(ARG_IMAGE_URI);
             timestamp = getArguments().getLong(ARG_TIMESTAMP);
             note = getArguments().getString(ARG_NOTE);
+            type = getArguments().getString(ARG_TYPE, "EXPENSE");
         }
     }
 
@@ -85,11 +94,17 @@ public class ReceiptDetailFragment extends Fragment {
             }
         });
 
-        if (imageUri != null && !imageUri.isEmpty()) {
-            ivReceiptImage.setImageURI(Uri.parse(imageUri));
+        int defaultRes = "INCOME".equalsIgnoreCase(type)
+                ? R.drawable.bg_default_receipt_income
+                : R.drawable.bg_default_receipt_expense;
+        if (imageUri != null && !imageUri.trim().isEmpty()) {
+            Glide.with(this)
+                    .load(imageUri)
+                    .placeholder(defaultRes)
+                    .error(defaultRes)
+                    .into(ivReceiptImage);
         } else {
-            // Fallback color if no image
-            ivReceiptImage.setBackgroundColor(0xFF333333);
+            ivReceiptImage.setImageResource(defaultRes);
         }
 
         tvCategory.setText(category != null ? category : "Other");

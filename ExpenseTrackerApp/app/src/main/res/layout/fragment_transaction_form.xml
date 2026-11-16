@@ -8,188 +8,234 @@
     android:clickable="true"
     android:focusable="true">
 
-    <!-- Captured Receipt Container with 24dp Rounded Corners -->
+    <!-- Top Header: Soft Segmented Switch (Chi tiêu / Thu nhập) + Quick Wallet Selector -->
+    <LinearLayout
+        android:id="@+id/ll_form_top_bar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_l"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/spacing_m"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_segment_track"
+            android:orientation="horizontal"
+            android:padding="3dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_type_expense"
+                style="@style/Widget.ExpenseTracker.SegmentButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_weight="0"
+                android:minWidth="88dp"
+                android:minHeight="36dp"
+                android:paddingHorizontal="14dp"
+                android:text="@string/type_expense_label" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_type_income"
+                style="@style/Widget.ExpenseTracker.SegmentButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_weight="0"
+                android:minWidth="88dp"
+                android:minHeight="36dp"
+                android:paddingHorizontal="14dp"
+                android:text="@string/type_income_label" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/tv_form_wallet_selector"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:background="@drawable/bg_glass_pill"
+            android:clickable="true"
+            android:drawablePadding="6dp"
+            android:ellipsize="end"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:maxWidth="148dp"
+            android:paddingHorizontal="12dp"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:drawableStartCompat="@drawable/ic_wallet"
+            app:drawableTint="@color/expense_orange" />
+    </LinearLayout>
+
+    <!-- Locket Square Photo Container with Bottom Gradient Scrim & Hero Amount Pill -->
     <androidx.cardview.widget.CardView
         android:id="@+id/card_image_container"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginHorizontal="@dimen/spacing_m"
+        android:layout_marginVertical="@dimen/spacing_s"
+        app:cardBackgroundColor="@color/card_dark"
         app:cardCornerRadius="@dimen/radius_xl"
-        app:cardElevation="0dp"
-        app:cardBackgroundColor="@android:color/transparent"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:cardElevation="4dp"
+        app:layout_constrainedHeight="true"
+        app:layout_constrainedWidth="true"
+        app:layout_constraintBottom_toTopOf="@id/ll_form_inputs"
         app:layout_constraintDimensionRatio="1:1"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.35">
+        app:layout_constraintTop_toBottomOf="@id/ll_form_top_bar"
+        app:layout_constraintVertical_bias="0.5">
 
         <ImageView
             android:id="@+id/iv_captured_image"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            android:contentDescription="Captured Receipt" />
-
+            android:contentDescription="Captured Receipt"
+            android:scaleType="centerCrop" />
     </androidx.cardview.widget.CardView>
 
-    <!-- EXPENSE / INCOME toggle -->
-    <com.google.android.material.button.MaterialButtonToggleGroup
-        android:id="@+id/toggle_transaction_type"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/spacing_xxl"
-        app:singleSelection="true"
-        app:checkedButton="@+id/btn_type_expense"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_type_expense"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="EXPENSE"
-            style="?attr/materialButtonOutlinedStyle"/>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_type_income"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="INCOME"
-            style="?attr/materialButtonOutlinedStyle"/>
-    </com.google.android.material.button.MaterialButtonToggleGroup>
-
-    <!-- Center Input Stack: Amount -> Note -> Date -> Category Chips -->
+    <!-- Below-Photo Input Stack: Hero Amount -> Date + Note (1 line) -> Category Chips -->
     <LinearLayout
         android:id="@+id/ll_form_inputs"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/spacing_s"
         android:orientation="vertical"
-        android:gravity="center_horizontal"
-        android:layout_marginBottom="@dimen/spacing_m"
         android:paddingHorizontal="@dimen/spacing_m"
         app:layout_constraintBottom_toTopOf="@id/ll_post_capture_actions"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_goneMarginBottom="@dimen/spacing_s">
 
-        <!-- 1. Amount input (largest) -->
         <EditText
             android:id="@+id/et_amount"
-            android:layout_width="wrap_content"
+            android:layout_width="260dp"
             android:layout_height="wrap_content"
-            android:hint="0 ₫"
-            android:textColorHint="@color/text_hint"
-            android:textColor="@color/white"
-            android:textSize="@dimen/text_size_headline"
-            android:textStyle="bold"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="@dimen/spacing_s"
+            android:background="@drawable/bg_glass_pill"
             android:gravity="center"
+            android:hint="0 ₫"
+            android:imeOptions="actionDone"
             android:inputType="numberDecimal"
             android:maxLines="1"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="10dp"
             android:singleLine="true"
-            android:imeOptions="actionDone"
-            android:background="@drawable/bg_glass_pill"
-            android:paddingVertical="@dimen/spacing_s"
-            android:paddingHorizontal="@dimen/spacing_l" />
-
-        <!-- 2. Note input (below amount) - Temporarily hidden -->
-        <EditText
-            android:id="@+id/et_note"
-            android:layout_width="wrap_content"
-            android:minWidth="160dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/spacing_s"
-            android:hint="@string/hint_note"
+            android:textColor="@color/white"
             android:textColorHint="@color/text_hint"
-            android:textColor="@color/white"
-            android:textSize="@dimen/text_size_body_small"
-            android:gravity="center"
-            android:inputType="textCapSentences"
-            android:maxLines="2"
-            android:imeOptions="actionDone"
-            android:background="@drawable/bg_glass_pill"
-            android:paddingVertical="@dimen/spacing_xs"
-            android:paddingHorizontal="@dimen/spacing_m"
-            android:visibility="gone" />
+            android:textSize="26sp"
+            android:textStyle="bold" />
 
-        <!-- 3. Date picker trigger chip - Temporarily hidden -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_date"
-            android:layout_width="wrap_content"
-            android:layout_height="@dimen/button_height_compact"
-            android:layout_marginTop="@dimen/spacing_s"
-            android:text="@string/label_today"
-            android:textSize="@dimen/text_size_caption"
-            android:textColor="@color/white"
-            app:icon="@drawable/ic_calendar"
-            app:iconSize="@dimen/icon_size_s"
-            app:iconTint="@color/white"
-            app:iconGravity="textStart"
-            android:backgroundTint="@color/surface_glass"
-            app:strokeColor="@color/surface_glass_stroke"
-            app:strokeWidth="1dp"
-            app:cornerRadius="@dimen/radius_pill"
-            android:paddingHorizontal="@dimen/spacing_m"
-            android:paddingVertical="0dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:visibility="gone" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <!-- 4. Dynamic category chips -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_date"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:backgroundTint="@color/surface_glass"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="0dp"
+                android:text="@string/label_today"
+                android:textColor="@color/white"
+                android:textSize="12sp"
+                app:cornerRadius="@dimen/radius_pill"
+                app:icon="@drawable/ic_calendar"
+                app:iconGravity="textStart"
+                app:iconSize="16dp"
+                app:iconTint="@color/expense_orange"
+                app:strokeColor="@color/surface_glass_stroke"
+                app:strokeWidth="1dp" />
+
+            <EditText
+                android:id="@+id/et_note"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="@dimen/spacing_s"
+                android:layout_weight="1"
+                android:background="@drawable/bg_glass_pill"
+                android:gravity="center_vertical|start"
+                android:hint="@string/hint_note"
+                android:imeOptions="actionDone"
+                android:inputType="textCapSentences"
+                android:maxLines="1"
+                android:paddingHorizontal="16dp"
+                android:singleLine="true"
+                android:textColor="@color/white"
+                android:textColorHint="@color/text_hint"
+                android:textSize="13sp" />
+        </LinearLayout>
+
         <HorizontalScrollView
             android:id="@+id/sv_categories"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:scrollbars="none"
-            android:layout_marginTop="@dimen/spacing_s">
+            android:layout_marginTop="@dimen/spacing_s"
+            android:scrollbars="none">
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chip_group_categories"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                app:selectionRequired="true"
                 app:singleLine="true"
-                app:singleSelection="true"
-                app:selectionRequired="true" />
+                app:singleSelection="true" />
         </HorizontalScrollView>
-
     </LinearLayout>
 
-    <!-- Post-capture action bar -->
+    <!-- Post-capture action bar with translucent circular side buttons -->
     <LinearLayout
         android:id="@+id/ll_post_capture_actions"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:layout_marginBottom="24dp"
         android:gravity="center"
-        android:padding="@dimen/spacing_xl"
-        android:layout_marginBottom="64dp"
+        android:orientation="horizontal"
+        android:paddingVertical="@dimen/spacing_m"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0">
+        app:layout_constraintStart_toStartOf="parent">
 
         <ImageButton
             android:id="@+id/btn_retake"
             android:layout_width="@dimen/button_height_standard"
             android:layout_height="@dimen/button_height_standard"
-            android:layout_marginEnd="@dimen/spacing_xl"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_close"
+            android:layout_marginEnd="36dp"
+            android:background="@drawable/bg_circle_translucent"
             android:contentDescription="Cancel"
+            android:src="@drawable/ic_close"
             app:tint="@color/white" />
 
-        <!-- Custom Locket-style Save Button (matching btn_capture) -->
         <com.example.expensetracker.ui.widget.CaptureButtonView
             android:id="@+id/btn_save"
             android:layout_width="80dp"
             android:layout_height="80dp"
             android:contentDescription="Save Transaction" />
 
-        <View
+        <ImageButton
+            android:id="@+id/btn_form_voice"
             android:layout_width="@dimen/button_height_standard"
             android:layout_height="@dimen/button_height_standard"
-            android:layout_marginStart="@dimen/spacing_xl"
-            android:visibility="invisible" />
+            android:layout_marginStart="36dp"
+            android:background="@drawable/bg_circle_translucent"
+            android:contentDescription="@string/voice_prompt_hint"
+            android:src="@drawable/ic_mic"
+            app:tint="@color/white" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

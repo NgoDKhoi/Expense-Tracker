@@ -65,7 +65,8 @@ public class PhotosFragment extends Fragment {
                     expense.getCategory(),
                     expense.getImageUri(),
                     time,
-                    expense.getNote()
+                    expense.getNote(),
+                    expense.getType()
             );
 
             requireActivity().getSupportFragmentManager().beginTransaction()

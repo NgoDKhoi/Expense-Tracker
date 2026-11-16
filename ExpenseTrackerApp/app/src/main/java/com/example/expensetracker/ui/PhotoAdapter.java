@@ -39,7 +39,7 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
         this.photoTransactions.clear();
         if (allExpenses != null) {
             for (TransactionModel tx : allExpenses) {
-                if (tx.getImageUri() != null && !tx.getImageUri().trim().isEmpty()) {
+                if (tx != null && !tx.isDeleted()) {
                     this.photoTransactions.add(tx);
                 }
             }
@@ -57,12 +57,20 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
     @Override
     public void onBindViewHolder(@NonNull PhotoViewHolder holder, int position) {
         TransactionModel expense = photoTransactions.get(position);
+        int defaultRes = "INCOME".equalsIgnoreCase(expense.getType())
+                ? R.drawable.bg_default_receipt_income
+                : R.drawable.bg_default_receipt_expense;
 
-        Glide.with(context)
-                .load(expense.getImageUri())
-                .placeholder(R.drawable.ic_photo_camera)
-                .error(R.drawable.ic_photo_camera)
-                .into(holder.ivPhoto);
+        if (expense.getImageUri() != null && !expense.getImageUri().trim().isEmpty()) {
+            Glide.with(context)
+                    .load(expense.getImageUri())
+                    .placeholder(defaultRes)
+                    .error(defaultRes)
+                    .into(holder.ivPhoto);
+        } else {
+            Glide.with(context).clear(holder.ivPhoto);
+            holder.ivPhoto.setImageResource(defaultRes);
+        }
 
         holder.tvAmount.setText(formatCompactCurrency(expense.getAmount()));
         holder.itemView.setOnClickListener(v -> listener.onPhotoClick(expense));

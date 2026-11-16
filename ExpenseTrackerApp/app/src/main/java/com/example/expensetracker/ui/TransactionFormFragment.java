@@ -1,10 +1,15 @@
 package com.example.expensetracker.ui;
 
+import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,10 +17,15 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -25,6 +35,8 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.expensetracker.ExpenseTrackerApplication;
 import com.example.expensetracker.R;
 import com.example.expensetracker.core.domain.model.CategoryModel;
+import com.example.expensetracker.core.domain.model.WalletModel;
+import com.example.expensetracker.ui.widget.CaptureButtonView;
 import com.example.expensetracker.viewmodel.AddTransactionViewModel;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
@@ -34,7 +46,9 @@ import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -46,24 +60,47 @@ public class TransactionFormFragment extends Fragment {
 
     private static final String ARG_IMAGE_URI = "imageUri";
     private static final String ARG_WALLET_ID = "walletId";
+    private static final String ARG_PREFILL_AMOUNT = "prefillAmount";
+    private static final String ARG_PREFILL_TYPE = "prefillType";
+    private static final String ARG_PREFILL_CATEGORY = "prefillCategory";
+    private static final String ARG_PREFILL_NOTE = "prefillNote";
+    private static final String ARG_DAY_OFFSET = "dayOffset";
 
     private String imageUri;
     private String selectedCategory = "Other";
     private String currentTransactionType = "EXPENSE";
     private long defaultWalletId = -1;
+    private double prefillAmount = 0.0;
+    private String prefillNote;
     private Date selectedDate = new Date();
+    private List<CategoryModel> cachedExpenseCategories = new ArrayList<>();
+    private List<CategoryModel> cachedIncomeCategories = new ArrayList<>();
+    private List<WalletModel> cachedWallets = new ArrayList<>();
+
+    private final ActivityResultLauncher<Intent> formVoiceLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    ArrayList<String> matches = result.getData().getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    if (matches != null && !matches.isEmpty() && matches.get(0) != null && !matches.get(0).trim().isEmpty()) {
+                        applySpokenExpense(matches.get(0));
+                    }
+                }
+            });
 
     @Inject
     ViewModelProvider.Factory viewModelFactory;
     private AddTransactionViewModel viewModel;
 
+    private ImageView ivCapturedImage;
+    private MaterialButton btnTypeExpense;
+    private MaterialButton btnTypeIncome;
+    private TextView tvWalletSelector;
     private EditText etAmount;
     private EditText etNote;
     private MaterialButton btnDate;
-    private MaterialButtonToggleGroup toggleTransactionType;
-    private View svCategories;
+    private CaptureButtonView btnSave;
     private ChipGroup chipGroupCategories;
-    private View llPostCaptureActions;
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
@@ -76,12 +113,52 @@ public class TransactionFormFragment extends Fragment {
         return fragment;
     }
 
+    public static TransactionFormFragment newVoiceInstance(long walletId,
+                                                           double prefillAmount,
+                                                           String prefillType,
+                                                           String prefillCategory,
+                                                           String prefillNote) {
+        return newVoiceInstance(walletId, prefillAmount, prefillType, prefillCategory, prefillNote, 0);
+    }
+
+    public static TransactionFormFragment newVoiceInstance(long walletId,
+                                                           double prefillAmount,
+                                                           String prefillType,
+                                                           String prefillCategory,
+                                                           String prefillNote,
+                                                           int dayOffset) {
+        TransactionFormFragment fragment = new TransactionFormFragment();
+        Bundle args = new Bundle();
+        args.putLong(ARG_WALLET_ID, walletId);
+        args.putDouble(ARG_PREFILL_AMOUNT, prefillAmount);
+        args.putString(ARG_PREFILL_TYPE, prefillType);
+        args.putString(ARG_PREFILL_CATEGORY, prefillCategory);
+        args.putString(ARG_PREFILL_NOTE, prefillNote);
+        args.putInt(ARG_DAY_OFFSET, dayOffset);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             imageUri = getArguments().getString(ARG_IMAGE_URI);
             defaultWalletId = getArguments().getLong(ARG_WALLET_ID, -1);
+            prefillAmount = getArguments().getDouble(ARG_PREFILL_AMOUNT, 0.0);
+            String typeArg = getArguments().getString(ARG_PREFILL_TYPE);
+            if (typeArg != null && !typeArg.isEmpty()) {
+                currentTransactionType = typeArg;
+            }
+            String catArg = getArguments().getString(ARG_PREFILL_CATEGORY);
+            if (catArg != null && !catArg.isEmpty()) {
+                selectedCategory = catArg;
+            }
+            prefillNote = getArguments().getString(ARG_PREFILL_NOTE);
+            int dayOffset = getArguments().getInt(ARG_DAY_OFFSET, 0);
+            if (dayOffset != 0) {
+                selectedDate = dateWithOffset(dayOffset);
+            }
         }
     }
 
@@ -98,32 +175,48 @@ public class TransactionFormFragment extends Fragment {
         ((ExpenseTrackerApplication) requireActivity().getApplication()).getAppComponent().inject(this);
         viewModel = new ViewModelProvider(this, viewModelFactory).get(AddTransactionViewModel.class);
 
-        ImageView ivCapturedImage = view.findViewById(R.id.iv_captured_image);
-        if (imageUri != null) {
-            ivCapturedImage.setImageURI(Uri.parse(imageUri));
-        }
-
+        ivCapturedImage = view.findViewById(R.id.iv_captured_image);
         etAmount = view.findViewById(R.id.et_amount);
         etNote = view.findViewById(R.id.et_note);
         btnDate = view.findViewById(R.id.btn_date);
-        toggleTransactionType = view.findViewById(R.id.toggle_transaction_type);
-        svCategories = view.findViewById(R.id.sv_categories);
+        btnTypeExpense = view.findViewById(R.id.btn_type_expense);
+        btnTypeIncome = view.findViewById(R.id.btn_type_income);
+        tvWalletSelector = view.findViewById(R.id.tv_form_wallet_selector);
         chipGroupCategories = view.findViewById(R.id.chip_group_categories);
-        llPostCaptureActions = view.findViewById(R.id.ll_post_capture_actions);
+        btnSave = view.findViewById(R.id.btn_save);
+
+        updatePreviewAndTypeToggleStyles();
+
+        if (prefillAmount > 0) {
+            String rawFormatted = prefillAmount == Math.floor(prefillAmount)
+                    ? String.valueOf((long) prefillAmount)
+                    : String.valueOf(prefillAmount);
+            etAmount.setText(rawFormatted);
+            etAmount.setSelection(etAmount.getText().length());
+        }
+        if (prefillNote != null && !prefillNote.isEmpty()) {
+            etNote.setText(prefillNote);
+        }
 
         // Handle WindowInsets for Edge-to-Edge and Keyboard (IME)
+        View llPostCaptureActions = view.findViewById(R.id.ll_post_capture_actions);
         ViewCompat.setOnApplyWindowInsetsListener(view, (v, windowInsets) -> {
             Insets imeInsets = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
             Insets systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            boolean keyboardOpen = imeInsets.bottom > systemBars.bottom;
+
+            if (llPostCaptureActions != null) {
+                llPostCaptureActions.setVisibility(keyboardOpen ? View.GONE : View.VISIBLE);
+            }
             int bottomPadding = Math.max(imeInsets.bottom, systemBars.bottom);
             v.setPadding(0, systemBars.top, 0, bottomPadding);
             return WindowInsetsCompat.CONSUMED;
         });
 
-
         etAmount.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_NEXT) {
-                etNote.requestFocus();
+                dismissKeyboard();
+                etAmount.clearFocus();
                 return true;
             }
             return false;
@@ -138,46 +231,204 @@ public class TransactionFormFragment extends Fragment {
             return false;
         });
 
+        setupWalletSelector();
         setupDatePicker();
         setupTransactionTypeToggle();
+        viewModel.getCategories("EXPENSE").observe(getViewLifecycleOwner(), cats ->
+                cachedExpenseCategories = cats != null ? cats : new ArrayList<>());
+        viewModel.getCategories("INCOME").observe(getViewLifecycleOwner(), cats ->
+                cachedIncomeCategories = cats != null ? cats : new ArrayList<>());
         observeCategories();
 
-        view.findViewById(R.id.btn_retake).setOnClickListener(v -> {
-            requireActivity().getSupportFragmentManager().popBackStack();
-        });
+        view.findViewById(R.id.btn_retake).setOnClickListener(v ->
+                requireActivity().getSupportFragmentManager().popBackStack());
 
-        com.example.expensetracker.ui.widget.CaptureButtonView btnSave = view.findViewById(R.id.btn_save);
+        View btnFormVoice = view.findViewById(R.id.btn_form_voice);
+        if (btnFormVoice != null) {
+            btnFormVoice.setOnClickListener(v -> {
+                dismissKeyboard();
+                launchFormVoiceInput();
+            });
+        }
+
         if (btnSave != null) {
-            android.graphics.drawable.Drawable checkIcon = androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_check);
-            btnSave.setCenterIcon(checkIcon, android.graphics.Color.parseColor("#FF5722"));
-            btnSave.setOnClickListener(v -> {
-            String amountStr = etAmount.getText().toString().trim();
-            if (amountStr.isEmpty()) {
-                etAmount.setError("Amount is required");
-                etAmount.requestFocus();
-                return;
-            }
-            if (defaultWalletId == -1) {
-                Toast.makeText(requireContext(), "Please select or create a wallet first", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            double amount;
-            try {
-                amount = Double.parseDouble(amountStr);
-            } catch (NumberFormatException e) {
-                etAmount.setError("Invalid number");
-                return;
-            }
-
-            String note = etNote.getText().toString().trim();
-            viewModel.saveExpense(amount, "", selectedCategory, imageUri, note, defaultWalletId, currentTransactionType, selectedDate);
-            Toast.makeText(requireContext(), "Saved!", Toast.LENGTH_SHORT).show();
-            requireActivity().getSupportFragmentManager().popBackStack();
-        });
+            btnSave.setOnClickListener(v -> handleSaveClicked());
         }
 
         etAmount.requestFocus();
+    }
+
+    private void setupWalletSelector() {
+        viewModel.getWallets().observe(getViewLifecycleOwner(), wallets -> {
+            if (wallets == null || wallets.isEmpty()) {
+                cachedWallets = new ArrayList<>();
+                defaultWalletId = -1;
+                if (tvWalletSelector != null) {
+                    tvWalletSelector.setText("+ Wallet");
+                }
+                return;
+            }
+            cachedWallets = wallets;
+            WalletModel selected = wallets.get(0);
+            if (defaultWalletId != -1) {
+                for (WalletModel w : wallets) {
+                    if (w.getId() == defaultWalletId) {
+                        selected = w;
+                        break;
+                    }
+                }
+            }
+            defaultWalletId = selected.getId();
+            if (tvWalletSelector != null) {
+                tvWalletSelector.setText(selected.getName() + " ▾");
+            }
+        });
+
+        if (tvWalletSelector != null) {
+            tvWalletSelector.setOnClickListener(v -> {
+                if (cachedWallets.isEmpty()) {
+                    Toast.makeText(requireContext(), "Please create a wallet first", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                PopupMenu popup = new PopupMenu(requireContext(), tvWalletSelector);
+                NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
+                format.setMinimumFractionDigits(0);
+                format.setMaximumFractionDigits(0);
+                for (int i = 0; i < cachedWallets.size(); i++) {
+                    WalletModel w = cachedWallets.get(i);
+                    popup.getMenu().add(0, i, i, w.getName() + ": " + format.format(w.getBalance()) + " ₫");
+                }
+                popup.setOnMenuItemClickListener(item -> {
+                    WalletModel picked = cachedWallets.get(item.getItemId());
+                    defaultWalletId = picked.getId();
+                    tvWalletSelector.setText(picked.getName() + " ▾");
+                    return true;
+                });
+                popup.show();
+            });
+        }
+    }
+
+    private void handleSaveClicked() {
+        String amountStr = etAmount.getText().toString().replace(",", "").trim();
+        if (amountStr.isEmpty()) {
+            etAmount.setError("Amount is required");
+            etAmount.requestFocus();
+            return;
+        }
+        if (defaultWalletId == -1) {
+            Toast.makeText(requireContext(), "Please select or create a wallet first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        double amount;
+        try {
+            amount = Double.parseDouble(amountStr);
+        } catch (NumberFormatException e) {
+            etAmount.setError("Invalid number");
+            return;
+        }
+        if (amount <= 0) {
+            etAmount.setError("Amount must be greater than 0");
+            return;
+        }
+
+        String note = etNote.getText().toString().trim();
+        viewModel.saveExpense(amount, "", selectedCategory, imageUri, note, defaultWalletId, currentTransactionType, selectedDate);
+        Toast.makeText(requireContext(), "Saved!", Toast.LENGTH_SHORT).show();
+        requireActivity().getSupportFragmentManager().popBackStack();
+    }
+
+    private void updatePreviewAndTypeToggleStyles() {
+        boolean isIncome = "INCOME".equalsIgnoreCase(currentTransactionType);
+        int activeColor = Color.parseColor(isIncome ? "#4CAF50" : "#FF5722");
+
+        if (imageUri != null && !imageUri.trim().isEmpty()) {
+            ivCapturedImage.setPadding(0, 0, 0, 0);
+            ivCapturedImage.setImageTintList(null);
+            ivCapturedImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            ivCapturedImage.setImageURI(Uri.parse(imageUri));
+        } else {
+            ivCapturedImage.setPadding(0, 0, 0, 0);
+            ivCapturedImage.setImageTintList(null);
+            ivCapturedImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            ivCapturedImage.setImageResource(isIncome
+                    ? R.drawable.bg_default_receipt_income
+                    : R.drawable.bg_default_receipt_expense);
+        }
+
+        if (btnTypeExpense != null && btnTypeIncome != null) {
+            int inactiveTextColor = Color.parseColor("#B0B0B0");
+            btnTypeExpense.setChecked(!isIncome);
+            btnTypeExpense.setBackgroundTintList(ColorStateList.valueOf(isIncome ? Color.TRANSPARENT : activeColor));
+            btnTypeExpense.setTextColor(isIncome ? inactiveTextColor : Color.WHITE);
+
+            btnTypeIncome.setChecked(isIncome);
+            btnTypeIncome.setBackgroundTintList(ColorStateList.valueOf(isIncome ? activeColor : Color.TRANSPARENT));
+            btnTypeIncome.setTextColor(isIncome ? Color.WHITE : inactiveTextColor);
+        }
+
+        if (btnSave != null) {
+            Drawable checkIcon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_check);
+            btnSave.setCenterIcon(checkIcon, activeColor);
+        }
+
+        if (btnDate != null) {
+            btnDate.setIconTint(ColorStateList.valueOf(activeColor));
+        }
+    }
+
+    private void setupTransactionTypeToggle() {
+        btnTypeExpense.setOnClickListener(v -> switchTransactionType("EXPENSE"));
+        btnTypeIncome.setOnClickListener(v -> switchTransactionType("INCOME"));
+    }
+
+    private void switchTransactionType(String newType) {
+        if (newType.equalsIgnoreCase(currentTransactionType)) {
+            return;
+        }
+        currentTransactionType = newType;
+        updatePreviewAndTypeToggleStyles();
+        observeCategories();
+    }
+
+    private static Date dateWithOffset(int dayOffset) {
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DAY_OF_YEAR, dayOffset);
+        return cal.getTime();
+    }
+
+    private void launchFormVoiceInput() {
+        try {
+            formVoiceLauncher.launch(VoiceInputHelper.createSpeechIntent(requireContext()));
+        } catch (ActivityNotFoundException e) {
+            VoiceInputHelper.showTextFallbackDialog(requireContext(), this::applySpokenExpense);
+        }
+    }
+
+    private void applySpokenExpense(String spokenText) {
+        List<CategoryModel> combined = new ArrayList<>(cachedExpenseCategories);
+        combined.addAll(cachedIncomeCategories);
+        AddTransactionViewModel.ParsedVoiceExpense parsed =
+                AddTransactionViewModel.parseVoiceInput(spokenText, combined);
+
+        if (parsed.amount > 0) {
+            String raw = parsed.amount == Math.floor(parsed.amount)
+                    ? String.valueOf((long) parsed.amount)
+                    : String.valueOf(parsed.amount);
+            etAmount.setText(raw);
+            etAmount.setSelection(etAmount.getText().length());
+        }
+        if (parsed.note != null && !parsed.note.isEmpty()) {
+            etNote.setText(parsed.note);
+        }
+        selectedDate = dateWithOffset(parsed.dayOffset);
+        updateDateButtonText();
+
+        currentTransactionType = parsed.type;
+        selectedCategory = parsed.category;
+        updatePreviewAndTypeToggleStyles();
+        observeCategories();
     }
 
     private void dismissKeyboard() {
@@ -224,19 +475,6 @@ public class TransactionFormFragment extends Fragment {
                 c1.get(Calendar.DAY_OF_YEAR) == c2.get(Calendar.DAY_OF_YEAR);
     }
 
-    private void setupTransactionTypeToggle() {
-        toggleTransactionType.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
-            if (isChecked) {
-                if (checkedId == R.id.btn_type_expense) {
-                    currentTransactionType = "EXPENSE";
-                } else if (checkedId == R.id.btn_type_income) {
-                    currentTransactionType = "INCOME";
-                }
-                observeCategories();
-            }
-        });
-    }
-
     private void observeCategories() {
         viewModel.getCategories(currentTransactionType).observe(getViewLifecycleOwner(), categories -> {
             renderCategoryChips(categories);
@@ -260,7 +498,7 @@ public class TransactionFormFragment extends Fragment {
             try {
                 colorInt = Color.parseColor(category.getColorHex());
             } catch (Exception e) {
-                colorInt = 0xFF607D8B; // fallback color
+                colorInt = 0xFF607D8B;
             }
 
             int[][] states = new int[][]{
@@ -293,7 +531,6 @@ public class TransactionFormFragment extends Fragment {
             chipGroupCategories.addView(chip);
         }
 
-        // Default to first category if current selectedCategory doesn't match
         if (!matchedSelection && !categories.isEmpty()) {
             Chip firstChip = (Chip) chipGroupCategories.getChildAt(0);
             if (firstChip != null) {
@@ -302,7 +539,6 @@ public class TransactionFormFragment extends Fragment {
             }
         }
 
-        // Add special "+ Tạo mới" action chip at the end
         Chip addChip = new Chip(requireContext());
         addChip.setText(R.string.btn_add_category);
         addChip.setCheckable(false);

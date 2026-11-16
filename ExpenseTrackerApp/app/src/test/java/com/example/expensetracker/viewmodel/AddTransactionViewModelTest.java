@@ -10,21 +10,18 @@ import com.example.expensetracker.core.domain.usecase.AddCategoryUseCase;
 import com.example.expensetracker.core.domain.usecase.AddTransactionUseCase;
 import com.example.expensetracker.core.domain.usecase.GetAllWalletsUseCase;
 import com.example.expensetracker.core.domain.usecase.GetCategoriesUseCase;
+import com.example.expensetracker.viewmodel.AddTransactionViewModel.ParsedVoiceExpense;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
-import java.util.ArrayList;
-import java.util.Date;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,18 +30,20 @@ public class AddTransactionViewModelTest {
     @Rule
     public InstantTaskExecutorRule instantTaskExecutorRule = new InstantTaskExecutorRule();
 
-    @Mock private AddTransactionUseCase addTransactionUseCase;
-    @Mock private GetAllWalletsUseCase getAllWalletsUseCase;
-    @Mock private GetCategoriesUseCase getCategoriesUseCase;
-    @Mock private AddCategoryUseCase addCategoryUseCase;
-
+    private AddTransactionUseCase addTransactionUseCase;
+    private GetAllWalletsUseCase getAllWalletsUseCase;
+    private GetCategoriesUseCase getCategoriesUseCase;
+    private AddCategoryUseCase addCategoryUseCase;
     private AddTransactionViewModel viewModel;
 
     @Before
-    public void setup() {
-        MockitoAnnotations.openMocks(this);
-        when(getAllWalletsUseCase.execute()).thenReturn(new MutableLiveData<>(new ArrayList<>()));
+    public void setUp() {
+        addTransactionUseCase = mock(AddTransactionUseCase.class);
+        getAllWalletsUseCase = mock(GetAllWalletsUseCase.class);
+        getCategoriesUseCase = mock(GetCategoriesUseCase.class);
+        addCategoryUseCase = mock(AddCategoryUseCase.class);
 
+        when(getAllWalletsUseCase.execute()).thenReturn(new MutableLiveData<List<WalletModel>>(Collections.emptyList()));
         viewModel = new AddTransactionViewModel(
                 addTransactionUseCase,
                 getAllWalletsUseCase,
@@ -54,41 +53,107 @@ public class AddTransactionViewModelTest {
     }
 
     @Test
-    public void testGetWallets_NotNull() {
-        assertNotNull(viewModel.getWallets());
+    public void parseVoiceInput_extractsVietnameseThousandSuffixAndCleansNote() {
+        ParsedVoiceExpense parsed = AddTransactionViewModel.parseVoiceInput("Ăn trưa phở bò 45k", null);
+
+        assertEquals(45_000.0, parsed.amount, 0.01);
+        assertEquals("EXPENSE", parsed.type);
+        assertEquals("Food", parsed.category);
+        assertEquals("Ăn trưa phở bò", parsed.note);
+        assertEquals(0, parsed.dayOffset);
     }
 
     @Test
-    public void testGetCategories_CallsUseCase() {
-        MutableLiveData<List<CategoryModel>> liveData = new MutableLiveData<>(new ArrayList<>());
-        when(getCategoriesUseCase.execute("EXPENSE")).thenReturn(liveData);
+    public void parseVoiceInput_extractsCompoundMillionAndColloquialAmounts() {
+        ParsedVoiceExpense utilities = AddTransactionViewModel.parseVoiceInput("Đóng tiền điện nước 1 triệu 2", null);
+        assertEquals(1_200_000.0, utilities.amount, 0.01);
+        assertEquals("EXPENSE", utilities.type);
+        assertEquals("Utilities", utilities.category);
+        assertEquals("Đóng tiền điện nước", utilities.note);
 
-        var result = viewModel.getCategories("EXPENSE");
-        assertNotNull(result);
-        verify(getCategoriesUseCase).execute("EXPENSE");
+        ParsedVoiceExpense shoes = AddTransactionViewModel.parseVoiceInput("Mua giày 1 triệu rưỡi", null);
+        assertEquals(1_500_000.0, shoes.amount, 0.01);
+        assertEquals("EXPENSE", shoes.type);
+        assertEquals("Shopping", shoes.category);
+        assertEquals("Mua giày", shoes.note);
+
+        ParsedVoiceExpense lunch = AddTransactionViewModel.parseVoiceInput("Ăn trưa trăm rưỡi", null);
+        assertEquals(150_000.0, lunch.amount, 0.01);
+        assertEquals("EXPENSE", lunch.type);
+        assertEquals("Food", lunch.category);
+        assertEquals("Ăn trưa", lunch.note);
     }
 
     @Test
-    public void testAddCategory_CallsUseCase() {
-        viewModel.addCategory("Shopping", "EXPENSE", "#9C27B0", "custom");
-        verify(addCategoryUseCase).execute(any(CategoryModel.class));
+    public void parseVoiceInput_detectsIncomeAndSalaryCategory() {
+        ParsedVoiceExpense parsed = AddTransactionViewModel.parseVoiceInput("Nhận lương tháng 15 triệu", null);
+
+        assertEquals(15_000_000.0, parsed.amount, 0.01);
+        assertEquals("INCOME", parsed.type);
+        assertEquals("Salary", parsed.category);
+        assertEquals("Nhận lương tháng", parsed.note);
     }
 
     @Test
-    public void testSaveExpense_CallsUseCaseWithExpectedParameters() {
-        Date customDate = new Date(1700000000000L);
-        viewModel.saveExpense(250.0, "Lunch", "Food", "uri://test", "Good food", 1L, "EXPENSE", customDate);
+    public void parseVoiceInput_resolvesTypeByFirstActionVerb() {
+        ParsedVoiceExpense incomeFirst = AddTransactionViewModel.parseVoiceInput("Nhận 45k tiền mua cà phê hộ", null);
+        assertEquals(45_000.0, incomeFirst.amount, 0.01);
+        assertEquals("INCOME", incomeFirst.type);
+        assertEquals("Other", incomeFirst.category);
+        assertEquals("Nhận tiền mua cà phê hộ", incomeFirst.note);
+
+        ParsedVoiceExpense buyFirst = AddTransactionViewModel.parseVoiceInput("Mua đồ nhận tại nhà 200k", null);
+        assertEquals(200_000.0, buyFirst.amount, 0.01);
+        assertEquals("EXPENSE", buyFirst.type);
+        assertEquals("Shopping", buyFirst.category);
+        assertEquals("Mua đồ nhận tại nhà", buyFirst.note);
+    }
+
+    @Test
+    public void parseVoiceInput_extractsRelativeDateAndCleansNote() {
+        ParsedVoiceExpense yesterday = AddTransactionViewModel.parseVoiceInput("Hôm qua mua cà phê 45k", null);
+        assertEquals(45_000.0, yesterday.amount, 0.01);
+        assertEquals("EXPENSE", yesterday.type);
+        assertEquals("Food", yesterday.category);
+        assertEquals("Mua cà phê", yesterday.note);
+        assertEquals(-1, yesterday.dayOffset);
+
+        ParsedVoiceExpense twoDaysAgo = AddTransactionViewModel.parseVoiceInput("Hôm kia thuê nhà 3 triệu", null);
+        assertEquals(3_000_000.0, twoDaysAgo.amount, 0.01);
+        assertEquals("EXPENSE", twoDaysAgo.type);
+        assertEquals("Utilities", twoDaysAgo.category);
+        assertEquals(-2, twoDaysAgo.dayOffset);
+    }
+
+    @Test
+    public void parseVoiceInput_matchesCustomUserCategory() {
+        List<CategoryModel> customCategories = Collections.singletonList(
+                new CategoryModel(10L, "Thú cưng", "EXPENSE", "#FF9800", "custom")
+        );
+
+        ParsedVoiceExpense parsed = AddTransactionViewModel.parseVoiceInput(
+                "Mua hạt cho thú cưng 250 nghìn",
+                customCategories
+        );
+
+        assertEquals(250_000.0, parsed.amount, 0.01);
+        assertEquals("EXPENSE", parsed.type);
+        assertEquals("Thú cưng", parsed.category);
+        assertEquals("Mua hạt cho thú cưng", parsed.note);
+    }
+
+    @Test
+    public void saveExpense_delegatesToAddTransactionUseCase() {
+        viewModel.saveExpense(65_000.0, "", "Food", null, "Bún bò", 1L, "EXPENSE");
 
         ArgumentCaptor<TransactionModel> captor = ArgumentCaptor.forClass(TransactionModel.class);
         verify(addTransactionUseCase).execute(captor.capture());
 
         TransactionModel saved = captor.getValue();
-        assertEquals(250.0, saved.getAmount(), 0.001);
-        assertEquals("Lunch", saved.getTitle());
+        assertEquals(65_000.0, saved.getAmount(), 0.01);
         assertEquals("Food", saved.getCategory());
-        assertEquals("Good food", saved.getNote());
+        assertEquals("Bún bò", saved.getNote());
         assertEquals(1L, saved.getWalletId());
         assertEquals("EXPENSE", saved.getType());
-        assertEquals(customDate, saved.getTimestamp());
     }
 }

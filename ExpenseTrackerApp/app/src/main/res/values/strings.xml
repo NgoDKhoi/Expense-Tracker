@@ -195,4 +195,10 @@
     <string name="chip_prompt_top_category">🔥 Top category</string>
     <string name="chip_prompt_streak_tips">💡 Streak tips</string>
     <string name="chip_prompt_wallet_health">🐷 Wallet health</string>
+    <string name="voice_prompt_hint">Say your expense, e.g. Lunch 45k</string>
+    <string name="voice_fallback_dialog_title">Smart Quick Input</string>
+    <string name="voice_fallback_input_hint">e.g. Pho 45k, Salary 15m</string>
+    <string name="error_gallery_copy_failed">Could not import selected photo</string>
+    <string name="type_expense_label">Expense</string>
+    <string name="type_income_label">Income</string>
 </resources>
