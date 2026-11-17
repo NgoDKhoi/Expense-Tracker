@@ -3,7 +3,9 @@ package com.example.expensetracker.ui;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
@@ -41,6 +43,7 @@ import com.example.expensetracker.R;
 import com.example.expensetracker.core.domain.model.CategoryModel;
 import com.example.expensetracker.core.domain.model.UserModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
+import com.example.expensetracker.util.CurrencyFormatter;
 import com.example.expensetracker.viewmodel.AddTransactionViewModel;
 import com.example.expensetracker.viewmodel.AuthViewModel;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -90,6 +93,8 @@ public class AddTransactionFragment extends Fragment {
     private ImageButton btnFlash, btnFlipCamera;
     private int lensFacing = CameraSelector.LENS_FACING_BACK;
     private int flashMode = ImageCapture.FLASH_MODE_OFF;
+    private SharedPreferences currencyPrefs;
+    private SharedPreferences.OnSharedPreferenceChangeListener currencyPrefsListener;
 
     private final ActivityResultLauncher<String> requestPermissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(),
@@ -251,18 +256,24 @@ public class AddTransactionFragment extends Fragment {
                 AuthFragment.RESULT_AUTH_CHANGED, getViewLifecycleOwner(),
                 (key, result) -> updateAvatar(btnSettings));
 
-        btnSettings.setOnClickListener(v -> {
-            if (authViewModel.getCurrentUser() == null) {
-                // Bottom sheet over the camera, so the camera keeps running behind it.
-                new AuthFragment().show(requireActivity().getSupportFragmentManager(), AuthFragment.TAG);
-                return;
+        btnSettings.setOnClickListener(v -> requireActivity().getSupportFragmentManager().beginTransaction()
+                .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
+                .add(android.R.id.content, new AccountFragment())
+                .addToBackStack(null)
+                .commit());
+
+        currencyPrefs = requireContext().getSharedPreferences(CurrencyFormatter.PREFS_NAME, Context.MODE_PRIVATE);
+        currencyPrefsListener = (prefs, key) -> {
+            if (CurrencyFormatter.KEY_CURRENCY_SYMBOL.equals(key) && isAdded() && cachedWallets != null && !cachedWallets.isEmpty()) {
+                for (WalletModel w : cachedWallets) {
+                    if (w.getId() == selectedWalletId) {
+                        updateWalletHeader(w);
+                        break;
+                    }
+                }
             }
-            requireActivity().getSupportFragmentManager().beginTransaction()
-                    .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
-                    .add(android.R.id.content, new AccountFragment())
-                    .addToBackStack(null)
-                    .commit();
-        });
+        };
+        currencyPrefs.registerOnSharedPreferenceChangeListener(currencyPrefsListener);
     }
 
     /** Shows the signed-in user's initial on the avatar, or the person icon for guests. */
@@ -329,10 +340,7 @@ public class AddTransactionFragment extends Fragment {
     }
 
     private String formatFullCurrency(double amount) {
-        NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
-        format.setMinimumFractionDigits(0);
-        format.setMaximumFractionDigits(2);
-        return format.format(amount) + " ₫";
+        return CurrencyFormatter.formatFull(requireContext(), amount);
     }
 
     @Override
@@ -509,6 +517,9 @@ public class AddTransactionFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        if (currencyPrefs != null && currencyPrefsListener != null) {
+            currencyPrefs.unregisterOnSharedPreferenceChangeListener(currencyPrefsListener);
+        }
         cameraExecutor.shutdown();
     }
 }

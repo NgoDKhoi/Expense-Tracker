@@ -75,12 +75,20 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
         TransactionModel record = expenses.get(position);
         Context context = holder.itemView.getContext();
 
-        String title = record.getTitle();
-        if (title == null || title.trim().isEmpty()) {
-            title = record.getCategory() != null ? record.getCategory() : context.getString(R.string.cat_other);
+        String categoryLabel = record.getCategory() != null && !record.getCategory().trim().isEmpty()
+                ? record.getCategory().trim()
+                : context.getString(R.string.cat_other);
+        holder.tvTitle.setText(categoryLabel);
+
+        String subNote = record.getNote() != null && !record.getNote().trim().isEmpty()
+                ? record.getNote().trim()
+                : (record.getTitle() != null ? record.getTitle().trim() : "");
+        if (!subNote.isEmpty() && !subNote.equalsIgnoreCase(categoryLabel)) {
+            holder.tvCategory.setText(subNote);
+            holder.tvCategory.setVisibility(View.VISIBLE);
+        } else {
+            holder.tvCategory.setVisibility(View.GONE);
         }
-        holder.tvTitle.setText(title);
-        holder.tvCategory.setText(record.getCategory());
         holder.tvDate.setText(dateFormat.format(record.getTimestamp()));
 
         String formattedAmount = CurrencyFormatter.formatFull(context, record.getAmount());
@@ -112,6 +120,14 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
             if (clickListener != null) {
                 clickListener.onTransactionClick(record);
             }
+        });
+
+        holder.itemView.setOnLongClickListener(v -> {
+            if (clickListener != null) {
+                clickListener.onTransactionClick(record);
+                return true;
+            }
+            return false;
         });
     }
 

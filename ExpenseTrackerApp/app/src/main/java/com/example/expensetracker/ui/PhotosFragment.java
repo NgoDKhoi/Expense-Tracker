@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.expensetracker.ExpenseTrackerApplication;
+import com.example.expensetracker.MainActivity;
 import com.example.expensetracker.R;
 import com.example.expensetracker.core.domain.usecase.GetAllTransactionsUseCase;
 
@@ -59,20 +60,15 @@ public class PhotosFragment extends Fragment {
         rvPhotos.setItemAnimator(new DefaultItemAnimator());
 
         adapter = new PhotoAdapter(requireContext(), new ArrayList<>(), expense -> {
-            long time = expense.getTimestamp() != null ? expense.getTimestamp().getTime() : System.currentTimeMillis();
-            ReceiptDetailFragment detailFragment = ReceiptDetailFragment.newInstance(
-                    expense.getAmount(),
-                    expense.getCategory(),
-                    expense.getImageUri(),
-                    time,
-                    expense.getNote(),
-                    expense.getType()
-            );
-
-            requireActivity().getSupportFragmentManager().beginTransaction()
-                    .add(android.R.id.content, detailFragment)
-                    .addToBackStack(null)
-                    .commit();
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).openReceiptInCameraHost(expense.getId());
+            } else {
+                ReceiptDetailFragment detailFragment = ReceiptDetailFragment.newInstance(expense);
+                requireActivity().getSupportFragmentManager().beginTransaction()
+                        .add(android.R.id.content, detailFragment)
+                        .addToBackStack(null)
+                        .commit();
+            }
         });
         rvPhotos.setAdapter(adapter);
 

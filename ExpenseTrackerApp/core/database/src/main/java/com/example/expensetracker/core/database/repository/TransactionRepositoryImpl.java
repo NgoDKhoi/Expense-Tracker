@@ -42,6 +42,19 @@ public class TransactionRepositoryImpl implements ITransactionRepository {
     }
 
     @Override
+    public void updateExpense(TransactionModel expense) {
+        executorService.execute(() -> {
+            try {
+                TransactionEntity entity = EntityMapper.toEntity(expense);
+                entity.markDirty();
+                transactionDao.updateExpense(entity);
+            } catch (Exception e) {
+                Log.d(TAG, "Error updating expense", e);
+            }
+        });
+    }
+
+    @Override
     public LiveData<List<TransactionModel>> getAllExpenses() {
         return Transformations.map(transactionDao.getAllExpenses(), EntityMapper::toModelList);
     }

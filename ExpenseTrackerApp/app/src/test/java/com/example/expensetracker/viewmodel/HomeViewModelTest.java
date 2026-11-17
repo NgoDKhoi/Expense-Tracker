@@ -222,12 +222,14 @@ public class HomeViewModelTest {
     @Test
     public void deleteCategoryUseCase_isCustomCategory_protectsDefaultsAndDetectsCustom() {
         CategoryModel seededFood = new CategoryModel(1L, "Food", "EXPENSE", "#4CAF50", "restaurant");
+        CategoryModel seededDrink = new CategoryModel(2L, "Drink", "EXPENSE", "#00BCD4", "local_cafe");
         CategoryModel seededSalary = new CategoryModel(7L, "Salary", "INCOME", "#4CAF50", "payments");
         CategoryModel userCustom = new CategoryModel(11L, "Thú cưng", "EXPENSE", "#FF9800", "custom");
         CategoryModel userNonDefaultName = new CategoryModel(12L, "Coffee", "EXPENSE", "#795548", "cafe");
 
         assertFalse(DeleteCategoryUseCase.isCustomCategory(null));
         assertFalse(DeleteCategoryUseCase.isCustomCategory(seededFood));
+        assertFalse(DeleteCategoryUseCase.isCustomCategory(seededDrink));
         assertFalse(DeleteCategoryUseCase.isCustomCategory(seededSalary));
         assertTrue(DeleteCategoryUseCase.isCustomCategory(userCustom));
         assertTrue(DeleteCategoryUseCase.isCustomCategory(userNonDefaultName));

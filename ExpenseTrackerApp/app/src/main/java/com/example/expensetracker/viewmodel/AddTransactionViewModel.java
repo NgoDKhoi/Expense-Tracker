@@ -14,6 +14,7 @@ import com.example.expensetracker.core.domain.usecase.AddTransactionUseCase;
 import com.example.expensetracker.core.domain.usecase.DeleteCategoryUseCase;
 import com.example.expensetracker.core.domain.usecase.GetAllWalletsUseCase;
 import com.example.expensetracker.core.domain.usecase.GetCategoriesUseCase;
+import com.example.expensetracker.core.domain.usecase.UpdateTransactionUseCase;
 
 import java.util.Date;
 import java.util.List;
@@ -94,6 +95,7 @@ public class AddTransactionViewModel extends ViewModel {
     }
 
     private final AddTransactionUseCase addTransactionUseCase;
+    private final UpdateTransactionUseCase updateTransactionUseCase;
     private final GetAllWalletsUseCase getAllWalletsUseCase;
     private final GetCategoriesUseCase getCategoriesUseCase;
     private final AddCategoryUseCase addCategoryUseCase;
@@ -103,6 +105,7 @@ public class AddTransactionViewModel extends ViewModel {
     @Inject
     public AddTransactionViewModel(
             AddTransactionUseCase addTransactionUseCase,
+            UpdateTransactionUseCase updateTransactionUseCase,
             GetAllWalletsUseCase getAllWalletsUseCase,
             GetCategoriesUseCase getCategoriesUseCase,
             AddCategoryUseCase addCategoryUseCase,
@@ -111,6 +114,7 @@ public class AddTransactionViewModel extends ViewModel {
         Log.d(TAG, "AddTransactionViewModel created with injected use cases.");
 
         this.addTransactionUseCase = addTransactionUseCase;
+        this.updateTransactionUseCase = updateTransactionUseCase;
         this.getAllWalletsUseCase = getAllWalletsUseCase;
         this.getCategoriesUseCase = getCategoriesUseCase;
         this.addCategoryUseCase = addCategoryUseCase;
@@ -157,6 +161,28 @@ public class AddTransactionViewModel extends ViewModel {
                 .build();
 
         addTransactionUseCase.execute(record);
+    }
+
+    public void updateExpense(long id, String uuid, double amount, String title, String category,
+                              String imageUri, String note, long walletId, String type, Date timestamp) {
+        Log.d(TAG, "updateExpense: id=" + id + ", amount=" + amount
+                + ", category=" + category + ", type=" + type);
+
+        TransactionModel record = new TransactionModel.Builder()
+                .id(id)
+                .amount(amount)
+                .title(title)
+                .category(category)
+                .imageUri(imageUri)
+                .timestamp(timestamp != null ? timestamp : new Date())
+                .syncStatus("PENDING")
+                .note(note)
+                .walletId(walletId)
+                .type(type)
+                .build();
+        record.setUuid(uuid);
+
+        updateTransactionUseCase.execute(record);
     }
 
     /**
@@ -338,8 +364,12 @@ public class AddTransactionViewModel extends ViewModel {
             return "Other";
         }
 
-        if (containsAny(lower, "ăn", "uống", "phở", "bún", "cơm", "cà phê", "cafe", "coffee",
-                "trà sữa", "nhậu", "bánh", "sáng", "trưa", "tối", "chợ", "siêu thị", "food", "lunch", "dinner")) {
+        if (containsAny(lower, "cà phê", "cafe", "coffee", "trà sữa", "trà", "nước uống",
+                "uống", "sinh tố", "nước ép", "bia", "rượu", "drink")) {
+            return "Drink";
+        }
+        if (containsAny(lower, "ăn", "phở", "bún", "cơm", "nhậu", "bánh",
+                "sáng", "trưa", "tối", "chợ", "siêu thị", "food", "lunch", "dinner")) {
             return "Food";
         }
         if (containsAny(lower, "xăng", "xe", "grab", "be", "taxi", "bus", "buýt",

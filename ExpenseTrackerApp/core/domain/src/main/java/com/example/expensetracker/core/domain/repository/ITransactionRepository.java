@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface ITransactionRepository {
     void insertExpense(TransactionModel expense);
+    void updateExpense(TransactionModel expense);
     LiveData<List<TransactionModel>> getAllExpenses();
     LiveData<List<TransactionModel>> getRecentExpenses(int limit);
     List<TransactionModel> getPendingExpenses();

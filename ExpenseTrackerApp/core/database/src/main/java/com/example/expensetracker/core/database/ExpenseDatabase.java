@@ -35,6 +35,7 @@ public abstract class ExpenseDatabase extends RoomDatabase {
     /** name, type, colorHex, iconName */
     private static final String[][] DEFAULT_CATEGORIES = {
             {"Food", "EXPENSE", "#4CAF50", "restaurant"},
+            {"Drink", "EXPENSE", "#00BCD4", "local_cafe"},
             {"Transport", "EXPENSE", "#2196F3", "directions_car"},
             {"Utilities", "EXPENSE", "#FF9800", "bolt"},
             {"Shopping", "EXPENSE", "#9C27B0", "shopping_bag"},
@@ -155,12 +156,11 @@ public abstract class ExpenseDatabase extends RoomDatabase {
      * updatedAt = 0: on a new device the account's own copy of these rows (if any) is newer and wins.
      */
     static void seedDefaults(SupportSQLiteDatabase db) {
-        if (countLive(db, "categories") == 0) {
-            for (String[] c : DEFAULT_CATEGORIES) {
-                db.execSQL("INSERT OR REPLACE INTO categories (uuid, name, type, colorHex, iconName, updatedAt, deleted, syncStatus)"
-                        + " VALUES (?, ?, ?, ?, ?, 0, 0, 'PENDING')",
-                        new Object[]{defaultCategoryUuid(c[1], c[0]), c[0], c[1], c[2], c[3]});
-            }
+        String conflictAction = countLive(db, "categories") == 0 ? "REPLACE" : "IGNORE";
+        for (String[] c : DEFAULT_CATEGORIES) {
+            db.execSQL("INSERT OR " + conflictAction + " INTO categories (uuid, name, type, colorHex, iconName, updatedAt, deleted, syncStatus)"
+                    + " VALUES (?, ?, ?, ?, ?, 0, 0, 'PENDING')",
+                    new Object[]{defaultCategoryUuid(c[1], c[0]), c[0], c[1], c[2], c[3]});
         }
         if (countLive(db, "wallet_table") == 0) {
             db.execSQL("INSERT OR REPLACE INTO wallet_table (uuid, name, initialBalance, colorHex, iconName, updatedAt, deleted, syncStatus)"

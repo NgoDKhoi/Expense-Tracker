@@ -11,6 +11,7 @@ import com.example.expensetracker.core.domain.usecase.AddTransactionUseCase;
 import com.example.expensetracker.core.domain.usecase.DeleteCategoryUseCase;
 import com.example.expensetracker.core.domain.usecase.GetAllWalletsUseCase;
 import com.example.expensetracker.core.domain.usecase.GetCategoriesUseCase;
+import com.example.expensetracker.core.domain.usecase.UpdateTransactionUseCase;
 import com.example.expensetracker.viewmodel.AddTransactionViewModel.ParsedVoiceExpense;
 
 import org.junit.Before;
@@ -19,6 +20,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -32,6 +34,7 @@ public class AddTransactionViewModelTest {
     public InstantTaskExecutorRule instantTaskExecutorRule = new InstantTaskExecutorRule();
 
     private AddTransactionUseCase addTransactionUseCase;
+    private UpdateTransactionUseCase updateTransactionUseCase;
     private GetAllWalletsUseCase getAllWalletsUseCase;
     private GetCategoriesUseCase getCategoriesUseCase;
     private AddCategoryUseCase addCategoryUseCase;
@@ -41,6 +44,7 @@ public class AddTransactionViewModelTest {
     @Before
     public void setUp() {
         addTransactionUseCase = mock(AddTransactionUseCase.class);
+        updateTransactionUseCase = mock(UpdateTransactionUseCase.class);
         getAllWalletsUseCase = mock(GetAllWalletsUseCase.class);
         getCategoriesUseCase = mock(GetCategoriesUseCase.class);
         addCategoryUseCase = mock(AddCategoryUseCase.class);
@@ -49,6 +53,7 @@ public class AddTransactionViewModelTest {
         when(getAllWalletsUseCase.execute()).thenReturn(new MutableLiveData<List<WalletModel>>(Collections.emptyList()));
         viewModel = new AddTransactionViewModel(
                 addTransactionUseCase,
+                updateTransactionUseCase,
                 getAllWalletsUseCase,
                 getCategoriesUseCase,
                 addCategoryUseCase,
@@ -118,7 +123,7 @@ public class AddTransactionViewModelTest {
         ParsedVoiceExpense yesterday = AddTransactionViewModel.parseVoiceInput("Hôm qua mua cà phê 45k", null);
         assertEquals(45_000.0, yesterday.amount, 0.01);
         assertEquals("EXPENSE", yesterday.type);
-        assertEquals("Food", yesterday.category);
+        assertEquals("Drink", yesterday.category);
         assertEquals("Mua cà phê", yesterday.note);
         assertEquals(-1, yesterday.dayOffset);
 
@@ -165,5 +170,26 @@ public class AddTransactionViewModelTest {
     public void deleteCategory_delegatesToUseCase() {
         viewModel.deleteCategory(42L);
         verify(deleteCategoryUseCase).execute(42L);
+    }
+
+    @Test
+    public void updateExpense_preservesIdAndUuidAndDelegatesToUseCase() {
+        Date customDate = new Date(1_760_000_000_000L);
+        viewModel.updateExpense(99L, "uuid-99", 125_000.0, "", "Drink",
+                "file:///receipt.jpg", "Trà sữa", 2L, "EXPENSE", customDate);
+
+        ArgumentCaptor<TransactionModel> captor = ArgumentCaptor.forClass(TransactionModel.class);
+        verify(updateTransactionUseCase).execute(captor.capture());
+
+        TransactionModel updated = captor.getValue();
+        assertEquals(99L, updated.getId());
+        assertEquals("uuid-99", updated.getUuid());
+        assertEquals(125_000.0, updated.getAmount(), 0.01);
+        assertEquals("Drink", updated.getCategory());
+        assertEquals("file:///receipt.jpg", updated.getImageUri());
+        assertEquals("Trà sữa", updated.getNote());
+        assertEquals(2L, updated.getWalletId());
+        assertEquals("EXPENSE", updated.getType());
+        assertEquals(customDate, updated.getTimestamp());
     }
 }

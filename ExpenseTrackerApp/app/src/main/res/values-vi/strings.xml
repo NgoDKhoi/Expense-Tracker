@@ -155,7 +155,7 @@
     <string name="cd_account">Tài khoản</string>
 
     <!-- Gamification: Virtual Piggy Pet & Leaderboard -->
-    <string name="piggy_screen_title">HEO TIẾT KIỆM &amp; XẾP HẠNG</string>
+    <string name="piggy_screen_title">HEO TIẾT KIỆM &amp; AI</string>
     <string name="piggy_streak_badge">Chuỗi %1$d ngày</string>
     <string name="piggy_total_days_badge">%1$d ngày đạt chuẩn</string>
     <string name="piggy_mood_happy">Vui vẻ • Trong hạn mức</string>
@@ -211,4 +211,27 @@
     <string name="dialog_add_friend_title">Kết bạn qua @username</string>
     <string name="dialog_add_friend_hint">\@username (VD: \@thanhtruc)</string>
     <string name="msg_friend_added">Đã thêm %1$s vào danh sách Bạn bè</string>
+    <string name="cd_edit_receipt">Sửa giao dịch</string>
+    <string name="msg_transaction_updated">Đã cập nhật giao dịch</string>
+    <string name="label_change_photo">Đổi ảnh</string>
+    <string name="dialog_edit_photo_title">Ảnh hóa đơn</string>
+    <string name="action_pick_from_gallery">Chọn từ Thư viện</string>
+    <string name="action_remove_photo">Xoá ảnh (về mặc định)</string>
+    <string name="cd_more_options">Tùy chọn</string>
+    <string name="action_save_image">Lưu ảnh</string>
+    <string name="msg_receipt_image_saved">Đã lưu ảnh vào Thư viện</string>
+    <string name="msg_no_receipt_image_to_save">Giao dịch này chưa có ảnh hóa đơn để lưu</string>
+    <string name="msg_save_image_failed">Không thể lưu ảnh</string>
+    <string name="action_back_to_camera">Về Camera</string>
+    <string name="action_close_detail">Đóng</string>
+    <string name="settings_section_title">Cài đặt</string>
+    <string name="account_guest_name">Bạn (Khách)</string>
+    <string name="action_sign_in_or_up">Đăng nhập / Tạo tài khoản</string>
+    <string name="settings_currency_title">Đơn vị tiền tệ</string>
+    <string name="settings_categories_title">Quản lý Danh mục</string>
+    <string name="settings_categories_count">%1$d danh mục</string>
+    <string name="action_delete_transaction">Xoá giao dịch</string>
+    <string name="dialog_delete_transaction_title">Xoá giao dịch này?</string>
+    <string name="dialog_delete_transaction_message">Giao dịch (%1$s) sẽ bị xoá và số dư ví sẽ được cập nhật lại.</string>
+    <string name="cd_ai_chat_head">Mở Trợ lý AI Heo Tiết Kiệm</string>
 </resources>

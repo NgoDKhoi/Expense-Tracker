@@ -1,14 +1,13 @@
 package com.example.expensetracker.ui;
 
-import android.content.res.ColorStateList;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -25,7 +24,6 @@ import com.example.expensetracker.core.domain.model.CategoryModel;
 import com.example.expensetracker.core.domain.model.CategoryTotalModel;
 import com.example.expensetracker.core.domain.model.TransactionModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
-import com.example.expensetracker.core.domain.usecase.DeleteCategoryUseCase;
 import com.example.expensetracker.util.CurrencyFormatter;
 import com.example.expensetracker.viewmodel.HomeViewModel;
 import com.github.mikephil.charting.charts.BarChart;
@@ -38,14 +36,8 @@ import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
-import com.google.android.material.bottomsheet.BottomSheetDialog;
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
-import com.google.android.material.chip.Chip;
-import com.google.android.material.chip.ChipGroup;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,7 +59,6 @@ public class DashboardOverviewFragment extends Fragment {
     private TextView tvNetSavings;
     private MaterialButtonToggleGroup toggleTimeFilter;
     private MaterialButtonToggleGroup toggleChartType;
-    private ImageButton btnDashboardSettings;
     private PieChart pieChart;
     private BarChart barChart;
     private RecyclerView rvRecentExpenses;
@@ -81,6 +72,8 @@ public class DashboardOverviewFragment extends Fragment {
     private List<CategoryModel> latestCategories = new ArrayList<>();
     private final Map<String, String> categoryColorMap = new HashMap<>();
     private List<TransactionModel> latestAllTransactions = new ArrayList<>();
+    private SharedPreferences currencyPrefs;
+    private SharedPreferences.OnSharedPreferenceChangeListener currencyPrefsListener;
 
     @Nullable
     @Override
@@ -101,35 +94,40 @@ public class DashboardOverviewFragment extends Fragment {
         tvNetSavings = view.findViewById(R.id.tv_net_savings);
         toggleTimeFilter = view.findViewById(R.id.toggle_time_filter);
         toggleChartType = view.findViewById(R.id.toggle_chart_type);
-        btnDashboardSettings = view.findViewById(R.id.btn_dashboard_settings);
         pieChart = view.findViewById(R.id.pie_chart);
         barChart = view.findViewById(R.id.bar_chart);
         rvRecentExpenses = view.findViewById(R.id.rv_recent_expenses);
 
         adapter = new TransactionAdapter();
+        adapter.setOnTransactionClickListener(this::openEditTransaction);
         rvRecentExpenses.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvRecentExpenses.setItemAnimator(new DefaultItemAnimator());
         rvRecentExpenses.setAdapter(adapter);
 
-        // Swipe-to-delete with Undo
+        // Swipe left to delete (with Undo), swipe right to edit
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new SwipeToDeleteCallback(requireContext()) {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
-                TransactionModel itemToDelete = adapter.getItemAt(position);
+                TransactionModel item = adapter.getItemAt(position);
+                if (item == null) return;
 
-                if (itemToDelete != null) {
-                    adapter.removeItem(position);
-                    viewModel.deleteTransaction(itemToDelete);
-
-                    Snackbar.make(requireView(), R.string.msg_transaction_deleted, Snackbar.LENGTH_LONG)
-                            .setAction(R.string.action_undo, v -> {
-                                adapter.restoreItem(itemToDelete, position);
-                                viewModel.undoDeleteTransaction(itemToDelete);
-                            })
-                            .setActionTextColor(0xFFFF5722)
-                            .show();
+                if (direction == ItemTouchHelper.RIGHT) {
+                    adapter.notifyItemChanged(position);
+                    openEditTransaction(item);
+                    return;
                 }
+
+                adapter.removeItem(position);
+                viewModel.deleteTransaction(item);
+
+                Snackbar.make(requireView(), R.string.msg_transaction_deleted, Snackbar.LENGTH_LONG)
+                        .setAction(R.string.action_undo, v -> {
+                            adapter.restoreItem(item, position);
+                            viewModel.undoDeleteTransaction(item);
+                        })
+                        .setActionTextColor(0xFFFF5722)
+                        .show();
             }
         });
         itemTouchHelper.attachToRecyclerView(rvRecentExpenses);
@@ -161,8 +159,6 @@ public class DashboardOverviewFragment extends Fragment {
                 }
             }
         });
-
-        btnDashboardSettings.setOnClickListener(v -> showQuickSettingsDialog());
 
         viewModel.getRecentExpenses().observe(getViewLifecycleOwner(), expenses -> adapter.setExpenses(expenses));
 
@@ -216,6 +212,22 @@ public class DashboardOverviewFragment extends Fragment {
                 setupBarChart();
             }
         });
+
+        currencyPrefs = requireContext().getSharedPreferences(CurrencyFormatter.PREFS_NAME, Context.MODE_PRIVATE);
+        currencyPrefsListener = (prefs, key) -> {
+            if (CurrencyFormatter.KEY_CURRENCY_SYMBOL.equals(key) && isAdded()) {
+                refreshCurrencyUi();
+            }
+        };
+        currencyPrefs.registerOnSharedPreferenceChangeListener(currencyPrefsListener);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (currencyPrefs != null && currencyPrefsListener != null) {
+            currencyPrefs.unregisterOnSharedPreferenceChangeListener(currencyPrefsListener);
+        }
     }
 
     private void renderTotalsAndSavings() {
@@ -298,6 +310,8 @@ public class DashboardOverviewFragment extends Fragment {
             switch (categoryName) {
                 case "Food":
                     return Color.parseColor("#4CAF50");
+                case "Drink":
+                    return Color.parseColor("#00BCD4");
                 case "Transport":
                     return Color.parseColor("#2196F3");
                 case "Utilities":
@@ -378,152 +392,13 @@ public class DashboardOverviewFragment extends Fragment {
         barChart.invalidate();
     }
 
-    private void showQuickSettingsDialog() {
-        String[] options = {
-                getString(R.string.action_change_currency),
-                getString(R.string.action_manage_categories)
-        };
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.dialog_quick_settings_title)
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        showCurrencyPickerDialog();
-                    } else if (which == 1) {
-                        showManageCategoriesDialog();
-                    }
-                })
-                .setNegativeButton(R.string.action_cancel, null)
-                .show();
-    }
-
-    private void showCurrencyPickerDialog() {
-        final String[] symbols = {
-                CurrencyFormatter.SYMBOL_VND,
-                CurrencyFormatter.SYMBOL_USD,
-                CurrencyFormatter.SYMBOL_EUR
-        };
-        final String[] labels = {
-                getString(R.string.currency_option_vnd),
-                getString(R.string.currency_option_usd),
-                getString(R.string.currency_option_eur)
-        };
-        String current = CurrencyFormatter.getSymbol(requireContext());
-        int checkedItem = 0;
-        for (int i = 0; i < symbols.length; i++) {
-            if (symbols[i].equals(current)) {
-                checkedItem = i;
-                break;
-            }
-        }
-
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.dialog_currency_title)
-                .setSingleChoiceItems(labels, checkedItem, (dialog, which) -> {
-                    String chosen = symbols[which];
-                    CurrencyFormatter.setSymbol(requireContext(), chosen);
-                    refreshCurrencyUi();
-                    dialog.dismiss();
-                    Toast.makeText(requireContext(),
-                            getString(R.string.msg_currency_updated, chosen),
-                            Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton(R.string.action_cancel, null)
-                .show();
-    }
-
-    private void showManageCategoriesDialog() {
-        List<CategoryModel> categories = new ArrayList<>(latestCategories);
-        CharSequence[] items = new CharSequence[categories.size()];
-        for (int i = 0; i < categories.size(); i++) {
-            CategoryModel cat = categories.get(i);
-            boolean custom = DeleteCategoryUseCase.isCustomCategory(cat);
-            items[i] = cat.getName() + " [" + cat.getType() + "]" + (custom ? " • Tự tạo (xoá)" : " • Mặc định");
-        }
-
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.dialog_manage_categories_title)
-                .setPositiveButton(R.string.action_add_category, (d, w) -> showAddCategoryBottomSheet())
-                .setNegativeButton(R.string.action_cancel, null);
-
-        if (!categories.isEmpty()) {
-            builder.setItems(items, (dialog, which) -> {
-                CategoryModel picked = categories.get(which);
-                if (DeleteCategoryUseCase.isCustomCategory(picked)) {
-                    confirmDeleteCategory(picked);
-                } else {
-                    Toast.makeText(requireContext(), R.string.msg_default_category_protected, Toast.LENGTH_SHORT).show();
-                }
-            });
-        } else {
-            builder.setMessage(R.string.label_category);
-        }
-        builder.show();
-    }
-
-    private void confirmDeleteCategory(CategoryModel category) {
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(getString(R.string.dialog_delete_category_title, category.getName()))
-                .setMessage(R.string.dialog_delete_category_message)
-                .setNegativeButton(R.string.action_cancel, null)
-                .setPositiveButton(R.string.action_delete, (d, w) -> {
-                    viewModel.deleteCategory(category.getId());
-                    Toast.makeText(requireContext(),
-                            getString(R.string.msg_category_deleted, category.getName()),
-                            Toast.LENGTH_SHORT).show();
-                })
-                .show();
-    }
-
-    private void showAddCategoryBottomSheet() {
-        BottomSheetDialog dialog = new BottomSheetDialog(requireContext(),
-                com.google.android.material.R.style.Theme_Design_BottomSheetDialog);
-        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_category, null);
-        dialog.setContentView(dialogView);
-
-        TextInputEditText etName = dialogView.findViewById(R.id.et_new_category_name);
-        MaterialButtonToggleGroup typeToggle = dialogView.findViewById(R.id.toggle_dialog_type);
-        ChipGroup colorGroup = dialogView.findViewById(R.id.chip_group_colors);
-        MaterialButton btnCancel = dialogView.findViewById(R.id.btn_cancel_category);
-        MaterialButton btnCreate = dialogView.findViewById(R.id.btn_create_category);
-
-        final String[] presetColors = {
-                "#4CAF50", "#2196F3", "#FF9800", "#9C27B0",
-                "#E91E63", "#00BCD4", "#FF5722", "#607D8B"
-        };
-        final String[] selectedColor = {presetColors[0]};
-
-        for (int i = 0; i < presetColors.length; i++) {
-            String hex = presetColors[i];
-            Chip colorChip = new Chip(requireContext());
-            colorChip.setCheckable(true);
-            colorChip.setText("   ");
-            colorChip.setChipBackgroundColor(ColorStateList.valueOf(Color.parseColor(hex)));
-            colorChip.setChipStrokeColor(ColorStateList.valueOf(Color.WHITE));
-            colorChip.setChipStrokeWidth(3f);
-            if (i == 0) {
-                colorChip.setChecked(true);
-            }
-            colorChip.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isChecked) {
-                    selectedColor[0] = hex;
-                }
-            });
-            colorGroup.addView(colorChip);
-        }
-
-        btnCancel.setOnClickListener(v -> dialog.dismiss());
-        btnCreate.setOnClickListener(v -> {
-            String name = etName.getText() != null ? etName.getText().toString().trim() : "";
-            if (name.isEmpty()) {
-                etName.setError(getString(R.string.error_category_name_required));
-                return;
-            }
-            String type = typeToggle.getCheckedButtonId() == R.id.btn_dialog_type_income ? "INCOME" : "EXPENSE";
-            viewModel.addCategory(name, type, selectedColor[0], "custom");
-            dialog.dismiss();
-            Toast.makeText(requireContext(), "Đã tạo: " + name, Toast.LENGTH_SHORT).show();
-        });
-
-        dialog.show();
+    private void openEditTransaction(TransactionModel tx) {
+        if (tx == null || !isAdded()) return;
+        requireActivity().getSupportFragmentManager().beginTransaction()
+                .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out,
+                        android.R.anim.fade_in, android.R.anim.fade_out)
+                .add(android.R.id.content, TransactionFormFragment.newEditInstance(tx))
+                .addToBackStack(null)
+                .commit();
     }
 }

@@ -155,7 +155,7 @@
     <string name="cd_account">Account</string>
 
     <!-- Gamification: Virtual Piggy Pet & Leaderboard -->
-    <string name="piggy_screen_title">PIGGY SAVER &amp; RANKING</string>
+    <string name="piggy_screen_title">PIGGY SAVER &amp; AI</string>
     <string name="piggy_streak_badge">%1$d-day Streak</string>
     <string name="piggy_total_days_badge">%1$d safe days</string>
     <string name="piggy_mood_happy">Happy • Safe Budget</string>
@@ -238,4 +238,27 @@
     <string name="msg_export_csv_empty">Không có giao dịch nào để xuất</string>
     <string name="msg_export_csv_failed">Không thể xuất file CSV</string>
     <string name="chooser_share_csv">Chia sẻ báo cáo CSV</string>
+    <string name="cd_edit_receipt">Edit transaction</string>
+    <string name="msg_transaction_updated">Transaction updated</string>
+    <string name="label_change_photo">Change photo</string>
+    <string name="dialog_edit_photo_title">Receipt Photo</string>
+    <string name="action_pick_from_gallery">Choose from Gallery</string>
+    <string name="action_remove_photo">Remove photo (use default)</string>
+    <string name="cd_more_options">More options</string>
+    <string name="action_save_image">Save image</string>
+    <string name="msg_receipt_image_saved">Saved image to Gallery</string>
+    <string name="msg_no_receipt_image_to_save">This transaction has no receipt photo to save</string>
+    <string name="msg_save_image_failed">Could not save image</string>
+    <string name="action_back_to_camera">Camera</string>
+    <string name="action_close_detail">Close</string>
+    <string name="settings_section_title">Settings</string>
+    <string name="account_guest_name">Guest</string>
+    <string name="action_sign_in_or_up">Sign in / Create account</string>
+    <string name="settings_currency_title">Display Currency</string>
+    <string name="settings_categories_title">Manage Categories</string>
+    <string name="settings_categories_count">%1$d categories</string>
+    <string name="action_delete_transaction">Delete transaction</string>
+    <string name="dialog_delete_transaction_title">Delete this transaction?</string>
+    <string name="dialog_delete_transaction_message">This transaction (%1$s) will be deleted and your wallet balance will update accordingly.</string>
+    <string name="cd_ai_chat_head">Open AI Piggy Assistant</string>
 </resources>

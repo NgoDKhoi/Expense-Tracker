@@ -9,7 +9,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import com.example.expensetracker.R;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import androidx.lifecycle.ViewModelProvider;
 import com.example.expensetracker.ExpenseTrackerApplication;
 import com.example.expensetracker.viewmodel.HomeViewModel;
@@ -17,7 +16,6 @@ import com.example.expensetracker.viewmodel.HomeViewModel;
 public class DashboardFragment extends Fragment {
 
     private BottomNavigationView bottomNav;
-    private FloatingActionButton fabPetAi;
     @javax.inject.Inject
     ViewModelProvider.Factory viewModelFactory;
     private HomeViewModel viewModel;
@@ -36,7 +34,6 @@ public class DashboardFragment extends Fragment {
         viewModel = new ViewModelProvider(this, viewModelFactory).get(HomeViewModel.class);
 
         bottomNav = view.findViewById(R.id.dashboard_bottom_nav);
-        fabPetAi = view.findViewById(R.id.fab_pet_ai);
 
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
@@ -44,16 +41,12 @@ public class DashboardFragment extends Fragment {
             
             if (itemId == R.id.nav_overview) {
                 selectedFragment = new DashboardOverviewFragment();
-                if (fabPetAi != null) fabPetAi.show();
             } else if (itemId == R.id.nav_wallets) {
                 selectedFragment = new WalletsFragment();
-                if (fabPetAi != null) fabPetAi.show();
             } else if (itemId == R.id.nav_history) {
                 selectedFragment = new HistoryFragment();
-                if (fabPetAi != null) fabPetAi.show();
             } else if (itemId == R.id.nav_ai) {
                 selectedFragment = new LeaderboardFragment();
-                if (fabPetAi != null) fabPetAi.show();
             }
 
             if (selectedFragment != null) {
@@ -67,19 +60,6 @@ public class DashboardFragment extends Fragment {
 
         if (savedInstanceState == null) {
             bottomNav.setSelectedItemId(R.id.nav_overview);
-        }
-
-        if (fabPetAi != null) {
-            fabPetAi.setOnClickListener(v -> {
-                if (requireActivity().getSupportFragmentManager().findFragmentByTag(AiAssistantFragment.TAG) != null) {
-                    return;
-                }
-                requireActivity().getSupportFragmentManager().beginTransaction()
-                        .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
-                        .add(android.R.id.content, new AiAssistantFragment(), AiAssistantFragment.TAG)
-                        .addToBackStack(null)
-                        .commit();
-            });
         }
     }
 }

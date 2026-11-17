@@ -330,11 +330,11 @@ public class AiAssistantFragment extends Fragment {
         tvPiggySpeech.setText(state.speechBubbleText);
         tvPiggyLevelBadge.setText(LeaderboardAdapter.stageLabel(requireContext(), state.stage));
 
-        int moodColorRes = moodColorRes(state.mood);
+        int moodColorRes = PiggyMoodUiHelper.moodColorRes(state.mood);
         int moodColor = ContextCompat.getColor(requireContext(), moodColorRes);
 
-        ivPiggyAvatar.setImageResource(moodDrawableRes(state.mood));
-        tvPiggyMoodStatus.setText(moodTextRes(state.mood));
+        ivPiggyAvatar.setImageResource(PiggyMoodUiHelper.moodDrawableRes(state.mood));
+        tvPiggyMoodStatus.setText(PiggyMoodUiHelper.moodTextRes(state.mood));
         tvPiggyMoodStatus.setTextColor(moodColor);
 
         ViewCompat.setBackgroundTintList(
@@ -347,42 +347,6 @@ public class AiAssistantFragment extends Fragment {
         String spentFormatted = formatFullCurrency(state.dailySpent);
         String limitFormatted = formatFullCurrency(state.dailyLimit);
         tvDailyBudgetAmount.setText(spentFormatted + " / " + limitFormatted);
-    }
-
-    private static int moodDrawableRes(Mood mood) {
-        switch (mood) {
-            case WORRIED:
-                return R.drawable.ic_piggy_worried;
-            case SAD:
-                return R.drawable.ic_piggy_sad;
-            case HAPPY:
-            default:
-                return R.drawable.ic_piggy_happy;
-        }
-    }
-
-    private static int moodTextRes(Mood mood) {
-        switch (mood) {
-            case WORRIED:
-                return R.string.piggy_mood_worried;
-            case SAD:
-                return R.string.piggy_mood_sad;
-            case HAPPY:
-            default:
-                return R.string.piggy_mood_happy;
-        }
-    }
-
-    private static int moodColorRes(Mood mood) {
-        switch (mood) {
-            case WORRIED:
-                return R.color.category_utilities;
-            case SAD:
-                return R.color.expense_orange;
-            case HAPPY:
-            default:
-                return R.color.income_green;
-        }
     }
 
     private static String formatFullCurrency(double amount) {

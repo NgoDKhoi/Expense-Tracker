@@ -17,22 +17,37 @@ import com.example.expensetracker.R;
 public abstract class SwipeToDeleteCallback extends ItemTouchHelper.SimpleCallback {
 
     private final Drawable deleteIcon;
-    private final ColorDrawable background;
-    private final int intrinsicWidth;
-    private final int intrinsicHeight;
+    private final Drawable editIcon;
+    private final ColorDrawable deleteBackground;
+    private final ColorDrawable editBackground;
+    private final int deleteWidth;
+    private final int deleteHeight;
+    private final int editWidth;
+    private final int editHeight;
 
     public SwipeToDeleteCallback(Context context) {
-        super(0, ItemTouchHelper.LEFT);
+        super(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT);
         deleteIcon = ContextCompat.getDrawable(context, R.drawable.ic_delete);
-        background = new ColorDrawable(Color.parseColor("#E53935")); // Red background
+        editIcon = ContextCompat.getDrawable(context, R.drawable.ic_edit);
+        deleteBackground = new ColorDrawable(Color.parseColor("#E53935"));
+        editBackground = new ColorDrawable(Color.parseColor("#2196F3"));
 
         if (deleteIcon != null) {
-            intrinsicWidth = deleteIcon.getIntrinsicWidth() > 0 ? deleteIcon.getIntrinsicWidth() : 60;
-            intrinsicHeight = deleteIcon.getIntrinsicHeight() > 0 ? deleteIcon.getIntrinsicHeight() : 60;
+            deleteWidth = deleteIcon.getIntrinsicWidth() > 0 ? deleteIcon.getIntrinsicWidth() : 60;
+            deleteHeight = deleteIcon.getIntrinsicHeight() > 0 ? deleteIcon.getIntrinsicHeight() : 60;
             deleteIcon.setTint(Color.WHITE);
         } else {
-            intrinsicWidth = 60;
-            intrinsicHeight = 60;
+            deleteWidth = 60;
+            deleteHeight = 60;
+        }
+
+        if (editIcon != null) {
+            editWidth = editIcon.getIntrinsicWidth() > 0 ? editIcon.getIntrinsicWidth() : 60;
+            editHeight = editIcon.getIntrinsicHeight() > 0 ? editIcon.getIntrinsicHeight() : 60;
+            editIcon.setTint(Color.WHITE);
+        } else {
+            editWidth = 60;
+            editHeight = 60;
         }
     }
 
@@ -47,19 +62,33 @@ public abstract class SwipeToDeleteCallback extends ItemTouchHelper.SimpleCallba
         View itemView = viewHolder.itemView;
         int itemHeight = itemView.getBottom() - itemView.getTop();
 
-        if (dX < 0) { // Swiping to the left
-            background.setBounds(itemView.getRight() + ((int) dX), itemView.getTop(), itemView.getRight(), itemView.getBottom());
-            background.draw(c);
+        if (dX < 0) { // Swiping left -> Delete
+            deleteBackground.setBounds(itemView.getRight() + ((int) dX), itemView.getTop(), itemView.getRight(), itemView.getBottom());
+            deleteBackground.draw(c);
 
-            int deleteIconTop = itemView.getTop() + (itemHeight - intrinsicHeight) / 2;
-            int deleteIconMargin = (itemHeight - intrinsicHeight) / 2;
-            int deleteIconLeft = itemView.getRight() - deleteIconMargin - intrinsicWidth;
-            int deleteIconRight = itemView.getRight() - deleteIconMargin;
-            int deleteIconBottom = deleteIconTop + intrinsicHeight;
+            int iconTop = itemView.getTop() + (itemHeight - deleteHeight) / 2;
+            int iconMargin = (itemHeight - deleteHeight) / 2;
+            int iconLeft = itemView.getRight() - iconMargin - deleteWidth;
+            int iconRight = itemView.getRight() - iconMargin;
+            int iconBottom = iconTop + deleteHeight;
 
             if (deleteIcon != null) {
-                deleteIcon.setBounds(deleteIconLeft, deleteIconTop, deleteIconRight, deleteIconBottom);
+                deleteIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
                 deleteIcon.draw(c);
+            }
+        } else if (dX > 0) { // Swiping right -> Edit
+            editBackground.setBounds(itemView.getLeft(), itemView.getTop(), itemView.getLeft() + ((int) dX), itemView.getBottom());
+            editBackground.draw(c);
+
+            int iconTop = itemView.getTop() + (itemHeight - editHeight) / 2;
+            int iconMargin = (itemHeight - editHeight) / 2;
+            int iconLeft = itemView.getLeft() + iconMargin;
+            int iconRight = iconLeft + editWidth;
+            int iconBottom = iconTop + editHeight;
+
+            if (editIcon != null) {
+                editIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                editIcon.draw(c);
             }
         }
 

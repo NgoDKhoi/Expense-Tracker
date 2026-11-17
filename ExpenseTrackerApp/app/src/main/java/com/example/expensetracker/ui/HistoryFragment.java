@@ -1,5 +1,7 @@
 package com.example.expensetracker.ui;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -26,6 +28,7 @@ import com.example.expensetracker.R;
 import com.example.expensetracker.core.domain.model.TransactionModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
 import com.example.expensetracker.util.CsvExportHelper;
+import com.example.expensetracker.util.CurrencyFormatter;
 import com.example.expensetracker.viewmodel.HomeViewModel;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
@@ -56,6 +59,8 @@ public class HistoryFragment extends Fragment {
     private final Map<Long, String> walletNames = new HashMap<>();
     private String currentSearchQuery = "";
     private String currentTypeFilter = "ALL"; // ALL, EXPENSE, INCOME
+    private SharedPreferences currencyPrefs;
+    private SharedPreferences.OnSharedPreferenceChangeListener currencyPrefsListener;
 
     @Nullable
     @Override
@@ -104,6 +109,22 @@ public class HistoryFragment extends Fragment {
             allTransactions = expenses != null ? expenses : new ArrayList<>();
             applyFilters();
         });
+
+        currencyPrefs = requireContext().getSharedPreferences(CurrencyFormatter.PREFS_NAME, Context.MODE_PRIVATE);
+        currencyPrefsListener = (prefs, key) -> {
+            if (CurrencyFormatter.KEY_CURRENCY_SYMBOL.equals(key) && isAdded() && adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
+        };
+        currencyPrefs.registerOnSharedPreferenceChangeListener(currencyPrefsListener);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (currencyPrefs != null && currencyPrefsListener != null) {
+            currencyPrefs.unregisterOnSharedPreferenceChangeListener(currencyPrefsListener);
+        }
     }
 
     private void setupEmptyState() {
@@ -119,32 +140,48 @@ public class HistoryFragment extends Fragment {
 
     private void setupRecyclerView() {
         adapter = new TransactionAdapter();
+        adapter.setOnTransactionClickListener(this::openEditTransaction);
         rvHistory.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvHistory.setItemAnimator(new DefaultItemAnimator());
         rvHistory.setAdapter(adapter);
 
-        // Swipe-to-delete with Undo Snackbar
+        // Swipe left to delete (with Undo), swipe right to edit
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new SwipeToDeleteCallback(requireContext()) {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
-                TransactionModel itemToDelete = adapter.getItemAt(position);
+                TransactionModel item = adapter.getItemAt(position);
+                if (item == null) return;
 
-                if (itemToDelete != null) {
-                    adapter.removeItem(position);
-                    viewModel.deleteTransaction(itemToDelete);
-
-                    Snackbar.make(requireView(), R.string.msg_transaction_deleted, Snackbar.LENGTH_LONG)
-                            .setAction(R.string.action_undo, v -> {
-                                adapter.restoreItem(itemToDelete, position);
-                                viewModel.undoDeleteTransaction(itemToDelete);
-                            })
-                            .setActionTextColor(0xFFFF5722)
-                            .show();
+                if (direction == ItemTouchHelper.RIGHT) {
+                    adapter.notifyItemChanged(position);
+                    openEditTransaction(item);
+                    return;
                 }
+
+                adapter.removeItem(position);
+                viewModel.deleteTransaction(item);
+
+                Snackbar.make(requireView(), R.string.msg_transaction_deleted, Snackbar.LENGTH_LONG)
+                        .setAction(R.string.action_undo, v -> {
+                            adapter.restoreItem(item, position);
+                            viewModel.undoDeleteTransaction(item);
+                        })
+                        .setActionTextColor(0xFFFF5722)
+                        .show();
             }
         });
         itemTouchHelper.attachToRecyclerView(rvHistory);
+    }
+
+    private void openEditTransaction(TransactionModel tx) {
+        if (tx == null || !isAdded()) return;
+        requireActivity().getSupportFragmentManager().beginTransaction()
+                .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out,
+                        android.R.anim.fade_in, android.R.anim.fade_out)
+                .add(android.R.id.content, TransactionFormFragment.newEditInstance(tx))
+                .addToBackStack(null)
+                .commit();
     }
 
     private void setupSearchAndFilters() {

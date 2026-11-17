@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ai_chat_head"
+    android:layout_width="60dp"
+    android:layout_height="60dp"
+    android:clickable="true"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:contentDescription="@string/cd_ai_chat_head"
+    android:elevation="12dp"
+    android:focusable="true">
+
+    <FrameLayout
+        android:id="@+id/fl_chat_head_body"
+        android:layout_width="54dp"
+        android:layout_height="54dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_ai_chat_head"
+        android:elevation="8dp">
+
+        <ImageView
+            android:id="@+id/iv_chat_head_piggy"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_piggy_happy" />
+    </FrameLayout>
+
+    <View
+        android:id="@+id/v_chat_head_status_dot"
+        android:layout_width="14dp"
+        android:layout_height="14dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="2dp"
+        android:layout_marginEnd="2dp"
+        android:background="@drawable/bg_chat_head_status_dot"
+        android:elevation="10dp" />
+
+</FrameLayout>

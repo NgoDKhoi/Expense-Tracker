@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
@@ -16,12 +17,14 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.PickVisualMediaRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -29,15 +32,18 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.widget.TextViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.expensetracker.ExpenseTrackerApplication;
 import com.example.expensetracker.R;
 import com.example.expensetracker.core.domain.model.CategoryModel;
+import com.example.expensetracker.core.domain.model.TransactionModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
 import com.example.expensetracker.core.domain.usecase.DeleteCategoryUseCase;
 import com.example.expensetracker.ui.widget.CaptureButtonView;
+import com.example.expensetracker.util.CurrencyFormatter;
 import com.example.expensetracker.viewmodel.AddTransactionViewModel;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
@@ -48,6 +54,11 @@ import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -55,10 +66,21 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.inject.Inject;
 
 public class TransactionFormFragment extends Fragment {
+
+    public static final String RESULT_TRANSACTION_UPDATED = "result_transaction_updated";
+    public static final String RESULT_KEY_AMOUNT = "amount";
+    public static final String RESULT_KEY_CATEGORY = "category";
+    public static final String RESULT_KEY_IMAGE_URI = "imageUri";
+    public static final String RESULT_KEY_TIMESTAMP = "timestamp";
+    public static final String RESULT_KEY_NOTE = "note";
+    public static final String RESULT_KEY_TYPE = "type";
+    public static final String RESULT_KEY_WALLET_ID = "walletId";
 
     private static final String ARG_IMAGE_URI = "imageUri";
     private static final String ARG_WALLET_ID = "walletId";
@@ -67,7 +89,14 @@ public class TransactionFormFragment extends Fragment {
     private static final String ARG_PREFILL_CATEGORY = "prefillCategory";
     private static final String ARG_PREFILL_NOTE = "prefillNote";
     private static final String ARG_DAY_OFFSET = "dayOffset";
+    private static final String ARG_EDIT_ID = "editId";
+    private static final String ARG_EDIT_UUID = "editUuid";
+    private static final String ARG_EDIT_TIMESTAMP = "editTimestamp";
+    private static final String ARG_EDIT_TITLE = "editTitle";
 
+    private long editTransactionId = -1;
+    private String editTransactionUuid;
+    private String editTitle = "";
     private String imageUri;
     private String selectedCategory = "Other";
     private String currentTransactionType = "EXPENSE";
@@ -78,6 +107,17 @@ public class TransactionFormFragment extends Fragment {
     private List<CategoryModel> cachedExpenseCategories = new ArrayList<>();
     private List<CategoryModel> cachedIncomeCategories = new ArrayList<>();
     private List<WalletModel> cachedWallets = new ArrayList<>();
+    private WalletModel currentSelectedWallet;
+    private ExecutorService imageCopyExecutor;
+
+    private final ActivityResultLauncher<PickVisualMediaRequest> pickImageLauncher = registerForActivityResult(
+            new ActivityResultContracts.PickVisualMedia(),
+            uri -> {
+                clearInputFocusAndHideKeyboard();
+                if (uri != null) {
+                    copySelectedImageAndRefresh(uri);
+                }
+            });
 
     private final ActivityResultLauncher<Intent> formVoiceLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -95,6 +135,7 @@ public class TransactionFormFragment extends Fragment {
     private AddTransactionViewModel viewModel;
 
     private ImageView ivCapturedImage;
+    private ImageButton btnRemoveReceiptPhoto;
     private MaterialButton btnTypeExpense;
     private MaterialButton btnTypeIncome;
     private TextView tvWalletSelector;
@@ -141,10 +182,35 @@ public class TransactionFormFragment extends Fragment {
         return fragment;
     }
 
+    public static TransactionFormFragment newEditInstance(TransactionModel tx) {
+        TransactionFormFragment fragment = new TransactionFormFragment();
+        Bundle args = new Bundle();
+        args.putLong(ARG_EDIT_ID, tx.getId());
+        args.putString(ARG_EDIT_UUID, tx.getUuid());
+        args.putString(ARG_EDIT_TITLE, tx.getTitle() != null ? tx.getTitle() : "");
+        args.putLong(ARG_WALLET_ID, tx.getWalletId());
+        args.putDouble(ARG_PREFILL_AMOUNT, tx.getAmount());
+        args.putString(ARG_PREFILL_TYPE, tx.getType());
+        args.putString(ARG_PREFILL_CATEGORY, tx.getCategory());
+        args.putString(ARG_PREFILL_NOTE, tx.getNote());
+        args.putString(ARG_IMAGE_URI, tx.getImageUri());
+        if (tx.getTimestamp() != null) {
+            args.putLong(ARG_EDIT_TIMESTAMP, tx.getTimestamp().getTime());
+        }
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
+            editTransactionId = getArguments().getLong(ARG_EDIT_ID, -1);
+            editTransactionUuid = getArguments().getString(ARG_EDIT_UUID);
+            String titleArg = getArguments().getString(ARG_EDIT_TITLE);
+            if (titleArg != null) {
+                editTitle = titleArg;
+            }
             imageUri = getArguments().getString(ARG_IMAGE_URI);
             defaultWalletId = getArguments().getLong(ARG_WALLET_ID, -1);
             prefillAmount = getArguments().getDouble(ARG_PREFILL_AMOUNT, 0.0);
@@ -157,9 +223,14 @@ public class TransactionFormFragment extends Fragment {
                 selectedCategory = catArg;
             }
             prefillNote = getArguments().getString(ARG_PREFILL_NOTE);
-            int dayOffset = getArguments().getInt(ARG_DAY_OFFSET, 0);
-            if (dayOffset != 0) {
-                selectedDate = dateWithOffset(dayOffset);
+            long editTimestamp = getArguments().getLong(ARG_EDIT_TIMESTAMP, -1);
+            if (editTimestamp > 0) {
+                selectedDate = new Date(editTimestamp);
+            } else {
+                int dayOffset = getArguments().getInt(ARG_DAY_OFFSET, 0);
+                if (dayOffset != 0) {
+                    selectedDate = dateWithOffset(dayOffset);
+                }
             }
         }
     }
@@ -178,6 +249,7 @@ public class TransactionFormFragment extends Fragment {
         viewModel = new ViewModelProvider(this, viewModelFactory).get(AddTransactionViewModel.class);
 
         ivCapturedImage = view.findViewById(R.id.iv_captured_image);
+        btnRemoveReceiptPhoto = view.findViewById(R.id.btn_remove_receipt_photo);
         etAmount = view.findViewById(R.id.et_amount);
         etNote = view.findViewById(R.id.et_note);
         btnDate = view.findViewById(R.id.btn_date);
@@ -257,7 +329,29 @@ public class TransactionFormFragment extends Fragment {
             btnSave.setOnClickListener(v -> handleSaveClicked());
         }
 
-        etAmount.requestFocus();
+        View llEditPhotoHint = view.findViewById(R.id.ll_edit_photo_hint);
+        if (editTransactionId > 0) {
+            if (llEditPhotoHint != null) {
+                llEditPhotoHint.setVisibility(View.VISIBLE);
+                llEditPhotoHint.setOnClickListener(v -> openGalleryPicker());
+            }
+            if (ivCapturedImage != null) {
+                ivCapturedImage.setOnClickListener(v -> openGalleryPicker());
+            }
+            if (btnRemoveReceiptPhoto != null) {
+                btnRemoveReceiptPhoto.setOnClickListener(v -> {
+                    imageUri = null;
+                    updatePreviewAndTypeToggleStyles();
+                });
+            }
+        }
+        updatePreviewAndTypeToggleStyles();
+
+        if (editTransactionId <= 0) {
+            etAmount.requestFocus();
+        } else {
+            clearInputFocusAndHideKeyboard();
+        }
     }
 
     private void setupWalletSelector() {
@@ -281,9 +375,7 @@ public class TransactionFormFragment extends Fragment {
                 }
             }
             defaultWalletId = selected.getId();
-            if (tvWalletSelector != null) {
-                tvWalletSelector.setText(selected.getName() + " ▾");
-            }
+            updateWalletSelectorLabel(selected);
         });
 
         if (tvWalletSelector != null) {
@@ -293,22 +385,48 @@ public class TransactionFormFragment extends Fragment {
                     return;
                 }
                 PopupMenu popup = new PopupMenu(requireContext(), tvWalletSelector);
-                NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
-                format.setMinimumFractionDigits(0);
-                format.setMaximumFractionDigits(0);
                 for (int i = 0; i < cachedWallets.size(); i++) {
                     WalletModel w = cachedWallets.get(i);
-                    popup.getMenu().add(0, i, i, w.getName() + ": " + format.format(w.getBalance()) + " ₫");
+                    popup.getMenu().add(0, i, i, w.getName() + ": " + CurrencyFormatter.formatFull(requireContext(), w.getBalance()));
                 }
                 popup.setOnMenuItemClickListener(item -> {
                     WalletModel picked = cachedWallets.get(item.getItemId());
                     defaultWalletId = picked.getId();
-                    tvWalletSelector.setText(picked.getName() + " ▾");
+                    updateWalletSelectorLabel(picked);
                     return true;
                 });
                 popup.show();
             });
         }
+    }
+
+    private void updateWalletSelectorLabel(WalletModel wallet) {
+        if (tvWalletSelector != null && wallet != null && isAdded()) {
+            currentSelectedWallet = wallet;
+            tvWalletSelector.setText(wallet.getName() + ": "
+                    + CurrencyFormatter.formatCompact(requireContext(), wallet.getBalance()) + " ▾");
+            applyWalletSelectorStyle(wallet);
+        }
+    }
+
+    private void applyWalletSelectorStyle(WalletModel wallet) {
+        if (tvWalletSelector == null || wallet == null || !isAdded()) {
+            return;
+        }
+        int walletColor = 0xFFFF5722;
+        if (wallet.getColorHex() != null && !wallet.getColorHex().trim().isEmpty()) {
+            try {
+                walletColor = Color.parseColor(wallet.getColorHex());
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        TextViewCompat.setCompoundDrawableTintList(tvWalletSelector, ColorStateList.valueOf(walletColor));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setCornerRadius(999f);
+        bg.setColor(0x99141414);
+        int strokePx = Math.max(2, Math.round(1.5f * getResources().getDisplayMetrics().density));
+        bg.setStroke(strokePx, walletColor);
+        tvWalletSelector.setBackground(bg);
     }
 
     private void handleSaveClicked() {
@@ -336,9 +454,105 @@ public class TransactionFormFragment extends Fragment {
         }
 
         String note = etNote.getText().toString().trim();
-        viewModel.saveExpense(amount, "", selectedCategory, imageUri, note, defaultWalletId, currentTransactionType, selectedDate);
-        Toast.makeText(requireContext(), "Saved!", Toast.LENGTH_SHORT).show();
+        if (editTransactionId > 0) {
+            viewModel.updateExpense(editTransactionId, editTransactionUuid, amount, editTitle, selectedCategory,
+                    imageUri, note, defaultWalletId, currentTransactionType, selectedDate);
+            Bundle result = new Bundle();
+            result.putDouble(RESULT_KEY_AMOUNT, amount);
+            result.putString(RESULT_KEY_CATEGORY, selectedCategory);
+            result.putString(RESULT_KEY_IMAGE_URI, imageUri);
+            result.putLong(RESULT_KEY_TIMESTAMP, selectedDate.getTime());
+            result.putString(RESULT_KEY_NOTE, note);
+            result.putString(RESULT_KEY_TYPE, currentTransactionType);
+            result.putLong(RESULT_KEY_WALLET_ID, defaultWalletId);
+            getParentFragmentManager().setFragmentResult(RESULT_TRANSACTION_UPDATED, result);
+            Toast.makeText(requireContext(), R.string.msg_transaction_updated, Toast.LENGTH_SHORT).show();
+        } else {
+            viewModel.saveExpense(amount, "", selectedCategory, imageUri, note, defaultWalletId, currentTransactionType, selectedDate);
+            Toast.makeText(requireContext(), "Saved!", Toast.LENGTH_SHORT).show();
+        }
         requireActivity().getSupportFragmentManager().popBackStack();
+    }
+
+    private void openGalleryPicker() {
+        clearInputFocusAndHideKeyboard();
+        pickImageLauncher.launch(
+                new PickVisualMediaRequest.Builder()
+                        .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
+                        .build()
+        );
+    }
+
+    private void clearInputFocusAndHideKeyboard() {
+        if (etAmount != null) {
+            etAmount.clearFocus();
+        }
+        if (etNote != null) {
+            etNote.clearFocus();
+        }
+        View root = getView();
+        if (root != null) {
+            root.requestFocus();
+        }
+        dismissKeyboard();
+    }
+
+    private void copySelectedImageAndRefresh(@NonNull Uri sourceUri) {
+        if (!isAdded()) return;
+        if (imageCopyExecutor == null || imageCopyExecutor.isShutdown()) {
+            imageCopyExecutor = Executors.newSingleThreadExecutor();
+        }
+        final Context appContext = requireContext().getApplicationContext();
+        imageCopyExecutor.execute(() -> {
+            File outputDir = new File(appContext.getFilesDir(), "expense_images");
+            if (!outputDir.exists()) {
+                outputDir.mkdirs();
+            }
+            String ts = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.getDefault()).format(new Date());
+            File destFile = new File(outputDir, "IMG_" + ts + ".jpg");
+            try (InputStream in = appContext.getContentResolver().openInputStream(sourceUri);
+                 OutputStream out = new FileOutputStream(destFile)) {
+                if (in == null) {
+                    throw new IOException("Null input stream");
+                }
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, read);
+                }
+                out.flush();
+                String newUri = Uri.fromFile(destFile).toString();
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        if (isAdded()) {
+                            imageUri = newUri;
+                            updatePreviewAndTypeToggleStyles();
+                            clearInputFocusAndHideKeyboard();
+                            View root = getView();
+                            if (root != null) {
+                                root.post(this::clearInputFocusAndHideKeyboard);
+                            }
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        if (isAdded()) {
+                            Toast.makeText(requireContext(), R.string.error_gallery_copy_failed, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (imageCopyExecutor != null) {
+            imageCopyExecutor.shutdown();
+        }
     }
 
     private void updatePreviewAndTypeToggleStyles() {
@@ -377,6 +591,15 @@ public class TransactionFormFragment extends Fragment {
 
         if (btnDate != null) {
             btnDate.setIconTint(ColorStateList.valueOf(activeColor));
+        }
+
+        if (btnRemoveReceiptPhoto != null) {
+            boolean hasCustomImage = editTransactionId > 0 && imageUri != null && !imageUri.trim().isEmpty();
+            btnRemoveReceiptPhoto.setVisibility(hasCustomImage ? View.VISIBLE : View.GONE);
+        }
+
+        if (currentSelectedWallet != null) {
+            applyWalletSelectorStyle(currentSelectedWallet);
         }
     }
 

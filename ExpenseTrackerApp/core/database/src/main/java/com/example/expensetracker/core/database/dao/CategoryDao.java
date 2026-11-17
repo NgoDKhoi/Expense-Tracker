@@ -20,10 +20,10 @@ public interface CategoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertCategories(List<CategoryEntity> categories);
 
-    @Query("SELECT * FROM categories WHERE deleted = 0 ORDER BY id ASC")
+    @Query("SELECT * FROM categories WHERE deleted = 0 ORDER BY CASE WHEN LOWER(name) = 'food' THEN 0 WHEN LOWER(name) = 'drink' THEN 1 ELSE 2 END, id ASC")
     LiveData<List<CategoryEntity>> getAllCategories();
 
-    @Query("SELECT * FROM categories WHERE deleted = 0 AND (type = :type OR type = 'ALL') ORDER BY id ASC")
+    @Query("SELECT * FROM categories WHERE deleted = 0 AND (type = :type OR type = 'ALL') ORDER BY CASE WHEN LOWER(name) = 'food' THEN 0 WHEN LOWER(name) = 'drink' THEN 1 ELSE 2 END, id ASC")
     LiveData<List<CategoryEntity>> getCategoriesByType(String type);
 
     @Query("UPDATE categories SET deleted = 1, updatedAt = :now, syncStatus = 'PENDING' WHERE id = :id")

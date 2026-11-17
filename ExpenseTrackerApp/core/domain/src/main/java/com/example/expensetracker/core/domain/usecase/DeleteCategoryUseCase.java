@@ -14,6 +14,7 @@ public class DeleteCategoryUseCase {
 
     private static final Set<String> DEFAULT_CATEGORY_NAMES = new HashSet<>(Arrays.asList(
             "food",
+            "drink",
             "transport",
             "utilities",
             "shopping",

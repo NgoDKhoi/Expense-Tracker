@@ -1,5 +1,7 @@
 package com.example.expensetracker.ui;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -53,6 +55,8 @@ public class WalletsFragment extends Fragment {
     private WalletAdapter adapter;
     private View emptyStateView;
     private RecyclerView rvWallets;
+    private SharedPreferences currencyPrefs;
+    private SharedPreferences.OnSharedPreferenceChangeListener currencyPrefsListener;
 
     private final String[] presetColors = {
             "#FF5722", "#4CAF50", "#2196F3", "#9C27B0",
@@ -95,6 +99,22 @@ public class WalletsFragment extends Fragment {
         });
 
         btnAddWallet.setOnClickListener(v -> showAddWalletDialog());
+
+        currencyPrefs = requireContext().getSharedPreferences(CurrencyFormatter.PREFS_NAME, Context.MODE_PRIVATE);
+        currencyPrefsListener = (prefs, key) -> {
+            if (CurrencyFormatter.KEY_CURRENCY_SYMBOL.equals(key) && isAdded() && adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
+        };
+        currencyPrefs.registerOnSharedPreferenceChangeListener(currencyPrefsListener);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (currencyPrefs != null && currencyPrefsListener != null) {
+            currencyPrefs.unregisterOnSharedPreferenceChangeListener(currencyPrefsListener);
+        }
     }
 
     private void setupEmptyState() {
