@@ -1,6 +1,7 @@
 package com.example.expensetracker.core.network.sync;
 
 import com.example.expensetracker.core.network.sync.dto.CategoryRow;
+import com.example.expensetracker.core.network.sync.dto.LeaderboardRow;
 import com.example.expensetracker.core.network.sync.dto.TransactionRow;
 import com.example.expensetracker.core.network.sync.dto.WalletRow;
 
@@ -43,4 +44,11 @@ public interface SupabaseSyncApi {
 
     @GET("rest/v1/transactions?order=synced_at.asc")
     Call<List<TransactionRow>> pullTransactions(@Header("Authorization") String bearer, @Query("synced_at") String synced, @Query("limit") int limit);
+
+    @Headers(UPSERT)
+    @POST("rest/v1/leaderboard_profiles?on_conflict=user_id&columns=display_name,username,streak_days,total_safe_days,stage")
+    Call<Void> upsertLeaderboardProfile(@Header("Authorization") String bearer, @Body List<LeaderboardRow> rows);
+
+    @GET("rest/v1/leaderboard_profiles?order=streak_days.desc")
+    Call<List<LeaderboardRow>> getLeaderboardProfiles(@Header("Authorization") String bearer, @Query("limit") int limit);
 }

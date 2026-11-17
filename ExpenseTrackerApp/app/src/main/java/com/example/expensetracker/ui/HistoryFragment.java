@@ -10,6 +10,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,13 +24,17 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.expensetracker.ExpenseTrackerApplication;
 import com.example.expensetracker.R;
 import com.example.expensetracker.core.domain.model.TransactionModel;
+import com.example.expensetracker.core.domain.model.WalletModel;
+import com.example.expensetracker.util.CsvExportHelper;
 import com.example.expensetracker.viewmodel.HomeViewModel;
-import com.google.android.material.chip.Chip;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -47,6 +52,8 @@ public class HistoryFragment extends Fragment {
     private ChipGroup chipGroupFilters;
 
     private List<TransactionModel> allTransactions = new ArrayList<>();
+    private List<TransactionModel> filteredTransactions = new ArrayList<>();
+    private final Map<Long, String> walletNames = new HashMap<>();
     private String currentSearchQuery = "";
     private String currentTypeFilter = "ALL"; // ALL, EXPENSE, INCOME
 
@@ -68,10 +75,30 @@ public class HistoryFragment extends Fragment {
         etSearch = view.findViewById(R.id.et_search_history);
         btnClearSearch = view.findViewById(R.id.btn_clear_search);
         chipGroupFilters = view.findViewById(R.id.chip_group_history_filters);
+        MaterialButton btnExportCsv = view.findViewById(R.id.btn_export_csv);
 
         setupEmptyState();
         setupRecyclerView();
         setupSearchAndFilters();
+
+        if (btnExportCsv != null) {
+            btnExportCsv.setOnClickListener(v -> {
+                if (filteredTransactions.isEmpty()) {
+                    Toast.makeText(requireContext(), R.string.msg_export_csv_empty, Toast.LENGTH_SHORT).show();
+                } else {
+                    CsvExportHelper.exportAndShareCsv(requireContext(), filteredTransactions, walletNames);
+                }
+            });
+        }
+
+        viewModel.getWallets().observe(getViewLifecycleOwner(), wallets -> {
+            walletNames.clear();
+            if (wallets != null) {
+                for (WalletModel w : wallets) {
+                    walletNames.put(w.getId(), w.getName());
+                }
+            }
+        });
 
         viewModel.getAllExpenses().observe(getViewLifecycleOwner(), expenses -> {
             allTransactions = expenses != null ? expenses : new ArrayList<>();
@@ -175,6 +202,7 @@ public class HistoryFragment extends Fragment {
             filtered.add(tx);
         }
 
+        filteredTransactions = filtered;
         adapter.setExpenses(filtered);
 
         if (filtered.isEmpty()) {

@@ -6,9 +6,11 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.lifecycle.MutableLiveData;
 
 import com.example.expensetracker.core.domain.Result;
+import com.example.expensetracker.core.domain.model.LeaderboardProfileModel;
 import com.example.expensetracker.core.domain.model.TransactionModel;
 import com.example.expensetracker.core.domain.model.UserModel;
 import com.example.expensetracker.core.domain.repository.IAuthRepository;
+import com.example.expensetracker.core.domain.repository.ILeaderboardRepository;
 import com.example.expensetracker.core.domain.usecase.GetAllTransactionsUseCase;
 import com.example.expensetracker.core.domain.usecase.SendAiChatPromptUseCase;
 import com.example.expensetracker.viewmodel.GamificationViewModel.ChatMessage;
@@ -33,9 +35,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -50,6 +55,7 @@ public class GamificationViewModelTest {
     private SharedPreferences prefs;
     private SharedPreferences.Editor editor;
     private SendAiChatPromptUseCase sendAiChatPromptUseCase;
+    private ILeaderboardRepository leaderboardRepository;
     private MutableLiveData<List<TransactionModel>> transactionsLiveData;
     private long fixedNowMillis;
     private GamificationViewModel viewModel;
@@ -61,12 +67,14 @@ public class GamificationViewModelTest {
         prefs = mock(SharedPreferences.class);
         editor = mock(SharedPreferences.Editor.class);
         sendAiChatPromptUseCase = mock(SendAiChatPromptUseCase.class);
+        leaderboardRepository = mock(ILeaderboardRepository.class);
 
         transactionsLiveData = new MutableLiveData<>();
         when(getAllTransactionsUseCase.execute()).thenReturn(transactionsLiveData);
         when(prefs.contains(anyString())).thenReturn(false);
         when(prefs.edit()).thenReturn(editor);
         when(editor.putLong(anyString(), anyLong())).thenReturn(editor);
+        when(editor.putStringSet(anyString(), anySet())).thenReturn(editor);
         when(sendAiChatPromptUseCase.isConfigured()).thenReturn(false);
 
         Calendar cal = Calendar.getInstance();
@@ -79,6 +87,7 @@ public class GamificationViewModelTest {
                 authRepository,
                 prefs,
                 sendAiChatPromptUseCase,
+                leaderboardRepository,
                 Runnable::run,
                 () -> fixedNowMillis
         );
@@ -137,6 +146,8 @@ public class GamificationViewModelTest {
         deletedToday.setDeleted(true);
 
         transactionsLiveData.setValue(Arrays.asList(tMinus4, tMinus3, tMinus2, tToday, incomeToday, deletedToday));
+        // Day -1 had no transaction, so checking in Day -1 keeps the streak alive
+        viewModel.recordDailyCheckIn(daysAgo(1).getTime());
 
         PiggyUiState state = viewModel.getPiggyState().getValue();
         assertNotNull(state);
@@ -144,6 +155,67 @@ public class GamificationViewModelTest {
         assertEquals(Mood.WORRIED, state.mood);
         assertEquals(3, state.streakDays);
         assertEquals(4, state.totalSafeDays);
+    }
+
+    @Test
+    public void inactiveDayWithoutCheckInOrTransaction_breaksStreakButKeepsTotalSafeDays() {
+        TransactionModel tMinus2 = expense(daysAgo(2), 30_000.0, "Food");
+        TransactionModel tToday = expense(daysAgo(0), 40_000.0, "Food");
+
+        transactionsLiveData.setValue(Arrays.asList(tMinus2, tToday));
+
+        PiggyUiState state = viewModel.getPiggyState().getValue();
+        assertNotNull(state);
+        assertEquals(1, state.streakDays);
+        assertEquals(2, state.totalSafeDays);
+    }
+
+    @Test
+    public void suggestDailyBudget_computesRecommendedCapFromThreeStepInputs() {
+        double suggested = GamificationViewModel.suggestDailyBudget(15_000_000.0, 6_000_000.0, 20);
+        assertEquals(200_000.0, suggested, 0.01);
+    }
+
+    @Test
+    public void addFriendByUsername_addsExistingAndNewHandleToFriendsLeaderboard() {
+        assertTrue(viewModel.addFriendByUsername("@thanhtruc"));
+        assertTrue(viewModel.addFriendByUsername("newfriend"));
+
+        viewModel.setRankingScope(RankingScope.FRIENDS);
+        List<LeaderboardEntry> friends = viewModel.getLeaderboardEntries().getValue();
+        assertNotNull(friends);
+
+        boolean hasThanhTruc = false;
+        boolean hasNewFriend = false;
+        for (LeaderboardEntry entry : friends) {
+            if ("@thanhtruc".equals(entry.username)) hasThanhTruc = true;
+            if ("@newfriend".equals(entry.username)) hasNewFriend = true;
+        }
+        assertTrue(hasThanhTruc);
+        assertTrue(hasNewFriend);
+    }
+
+    @Test
+    public void syncLeaderboardWithCloud_upsertsAndMergesRemoteProfiles() {
+        when(authRepository.getCurrentUser()).thenReturn(new UserModel("u1", "khoi@example.com", "Khôi", "khoing"));
+        viewModel.refreshUserIdentity();
+
+        List<LeaderboardProfileModel> remoteProfiles = Arrays.asList(
+                new LeaderboardProfileModel("u2", "Lan Anh", "@lananh", 42, 60, "ADULT")
+        );
+        when(leaderboardRepository.fetchTopProfiles(anyInt())).thenReturn(Result.success(remoteProfiles));
+
+        viewModel.syncLeaderboardWithCloud();
+
+        List<LeaderboardEntry> entries = viewModel.getLeaderboardEntries().getValue();
+        assertNotNull(entries);
+        boolean foundLanAnh = false;
+        for (LeaderboardEntry e : entries) {
+            if ("@lananh".equals(e.username) && e.streakDays == 42) {
+                foundLanAnh = true;
+            }
+        }
+        assertTrue(foundLanAnh);
     }
 
     @Test
@@ -157,6 +229,7 @@ public class GamificationViewModelTest {
         assertEquals(Mood.SAD, before.mood);
         assertEquals(0, before.streakDays);
 
+        clearInvocations(editor);
         viewModel.setDailyBudgetLimit(200_000.0);
 
         verify(editor).putLong(

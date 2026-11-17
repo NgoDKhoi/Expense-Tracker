@@ -15,8 +15,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.expensetracker.R;
 import com.example.expensetracker.core.domain.model.TransactionModel;
+import com.example.expensetracker.util.CurrencyFormatter;
 
-import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -83,11 +83,7 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
         holder.tvCategory.setText(record.getCategory());
         holder.tvDate.setText(dateFormat.format(record.getTimestamp()));
 
-        // Number format: US Locale with compact thousands separator
-        NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
-        format.setMinimumFractionDigits(0);
-        format.setMaximumFractionDigits(2);
-        String formattedAmount = format.format(record.getAmount()) + " ₫";
+        String formattedAmount = CurrencyFormatter.formatFull(context, record.getAmount());
 
         boolean isIncome = "INCOME".equalsIgnoreCase(record.getType());
         if (isIncome) {

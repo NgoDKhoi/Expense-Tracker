@@ -36,6 +36,7 @@ import com.example.expensetracker.ExpenseTrackerApplication;
 import com.example.expensetracker.R;
 import com.example.expensetracker.core.domain.model.CategoryModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
+import com.example.expensetracker.core.domain.usecase.DeleteCategoryUseCase;
 import com.example.expensetracker.ui.widget.CaptureButtonView;
 import com.example.expensetracker.viewmodel.AddTransactionViewModel;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -44,6 +45,7 @@ import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.text.NumberFormat;
@@ -528,6 +530,13 @@ public class TransactionFormFragment extends Fragment {
                 }
             });
 
+            if (DeleteCategoryUseCase.isCustomCategory(category)) {
+                chip.setOnLongClickListener(v -> {
+                    confirmDeleteCategory(category);
+                    return true;
+                });
+            }
+
             chipGroupCategories.addView(chip);
         }
 
@@ -614,5 +623,22 @@ public class TransactionFormFragment extends Fragment {
         });
 
         dialog.show();
+    }
+
+    private void confirmDeleteCategory(CategoryModel category) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.dialog_delete_category_title, category.getName()))
+                .setMessage(R.string.dialog_delete_category_message)
+                .setNegativeButton(R.string.action_cancel, null)
+                .setPositiveButton(R.string.action_delete, (d, w) -> {
+                    viewModel.deleteCategory(category.getId());
+                    if (category.getName() != null && category.getName().equalsIgnoreCase(selectedCategory)) {
+                        selectedCategory = "Other";
+                    }
+                    Toast.makeText(requireContext(),
+                            getString(R.string.msg_category_deleted, category.getName()),
+                            Toast.LENGTH_SHORT).show();
+                })
+                .show();
     }
 }

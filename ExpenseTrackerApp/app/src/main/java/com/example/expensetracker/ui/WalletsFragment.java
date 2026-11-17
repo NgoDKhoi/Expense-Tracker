@@ -25,6 +25,7 @@ import com.example.expensetracker.core.domain.usecase.DeleteWalletUseCase;
 import com.example.expensetracker.core.domain.usecase.GetAllWalletsUseCase;
 import com.example.expensetracker.core.domain.usecase.InsertWalletUseCase;
 import com.example.expensetracker.core.domain.usecase.UpdateWalletUseCase;
+import com.example.expensetracker.util.CurrencyFormatter;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -241,10 +242,7 @@ public class WalletsFragment extends Fragment {
             WalletModel wallet = wallets.get(position);
             holder.tvName.setText(wallet.getName());
 
-            NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
-            format.setMinimumFractionDigits(0);
-            format.setMaximumFractionDigits(2);
-            String formattedBalance = format.format(wallet.getBalance()) + " ₫";
+            String formattedBalance = CurrencyFormatter.formatFull(holder.itemView.getContext(), wallet.getBalance());
             holder.tvBalance.setText(formattedBalance);
 
             // Apply color bar

@@ -201,4 +201,41 @@
     <string name="error_gallery_copy_failed">Could not import selected photo</string>
     <string name="type_expense_label">Expense</string>
     <string name="type_income_label">Income</string>
+    <string name="piggy_wizard_section_title">🐷 Piggy 3-Step Budget Advisor</string>
+    <string name="piggy_wizard_income_hint">Monthly income (₫)</string>
+    <string name="piggy_wizard_fixed_hint">Fixed monthly bills (₫)</string>
+    <string name="piggy_wizard_saving_label">Saving target: %1$d%%</string>
+    <string name="piggy_wizard_calc_btn">✨ Calculate Suggested Cap</string>
+    <string name="piggy_wizard_suggested_msg">Piggy suggests %1$s / day</string>
+    <string name="leaderboard_add_friend_btn">+ Add Friend</string>
+    <string name="dialog_add_friend_title">Add Friend by @username</string>
+    <string name="dialog_add_friend_hint">\@username</string>
+    <string name="msg_friend_added">Added %1$s to Friends</string>
+
+    <!-- Phase 4.3c: Dashboard Analytics, CSV Export, Categories & Currency -->
+    <string name="cd_dashboard_settings">Quick Settings</string>
+    <string name="label_net_savings_positive">Tiết kiệm ròng: +%1$s</string>
+    <string name="label_net_savings_negative">Tiết kiệm ròng: -%1$s</string>
+    <string name="chart_mode_pie">Tỷ trọng</string>
+    <string name="chart_mode_bar">Xu hướng</string>
+    <string name="chart_legend_income">Thu nhập</string>
+    <string name="chart_legend_expense">Chi tiêu</string>
+    <string name="dialog_quick_settings_title">Cài đặt nhanh</string>
+    <string name="action_change_currency">Đổi ký hiệu tiền tệ (₫ / $ / €)</string>
+    <string name="action_manage_categories">Quản lý Danh mục</string>
+    <string name="dialog_currency_title">Chọn ký hiệu tiền tệ</string>
+    <string name="currency_option_vnd">₫ — Việt Nam Đồng</string>
+    <string name="currency_option_usd">$ — US Dollar</string>
+    <string name="currency_option_eur">€ — Euro</string>
+    <string name="msg_currency_updated">Đã đổi ký hiệu tiền tệ sang %1$s</string>
+    <string name="dialog_manage_categories_title">Quản lý Danh mục</string>
+    <string name="action_add_category">+ Thêm danh mục</string>
+    <string name="msg_default_category_protected">Danh mục mặc định không thể xoá</string>
+    <string name="dialog_delete_category_title">Xoá danh mục \"%1$s\"?</string>
+    <string name="dialog_delete_category_message">Danh mục này sẽ bị xoá khỏi danh sách chọn nhanh. Các giao dịch cũ vẫn được giữ nguyên.</string>
+    <string name="msg_category_deleted">Đã xoá danh mục: %1$s</string>
+    <string name="btn_export_csv">Xuất CSV</string>
+    <string name="msg_export_csv_empty">Không có giao dịch nào để xuất</string>
+    <string name="msg_export_csv_failed">Không thể xuất file CSV</string>
+    <string name="chooser_share_csv">Chia sẻ báo cáo CSV</string>
 </resources>

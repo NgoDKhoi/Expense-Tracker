@@ -11,6 +11,7 @@ import com.example.expensetracker.core.domain.model.TransactionModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
 import com.example.expensetracker.core.domain.usecase.AddCategoryUseCase;
 import com.example.expensetracker.core.domain.usecase.AddTransactionUseCase;
+import com.example.expensetracker.core.domain.usecase.DeleteCategoryUseCase;
 import com.example.expensetracker.core.domain.usecase.GetAllWalletsUseCase;
 import com.example.expensetracker.core.domain.usecase.GetCategoriesUseCase;
 
@@ -96,6 +97,7 @@ public class AddTransactionViewModel extends ViewModel {
     private final GetAllWalletsUseCase getAllWalletsUseCase;
     private final GetCategoriesUseCase getCategoriesUseCase;
     private final AddCategoryUseCase addCategoryUseCase;
+    private final DeleteCategoryUseCase deleteCategoryUseCase;
     private final LiveData<List<WalletModel>> wallets;
 
     @Inject
@@ -103,7 +105,8 @@ public class AddTransactionViewModel extends ViewModel {
             AddTransactionUseCase addTransactionUseCase,
             GetAllWalletsUseCase getAllWalletsUseCase,
             GetCategoriesUseCase getCategoriesUseCase,
-            AddCategoryUseCase addCategoryUseCase) {
+            AddCategoryUseCase addCategoryUseCase,
+            DeleteCategoryUseCase deleteCategoryUseCase) {
 
         Log.d(TAG, "AddTransactionViewModel created with injected use cases.");
 
@@ -111,6 +114,7 @@ public class AddTransactionViewModel extends ViewModel {
         this.getAllWalletsUseCase = getAllWalletsUseCase;
         this.getCategoriesUseCase = getCategoriesUseCase;
         this.addCategoryUseCase = addCategoryUseCase;
+        this.deleteCategoryUseCase = deleteCategoryUseCase;
         this.wallets = getAllWalletsUseCase.execute();
     }
 
@@ -124,6 +128,10 @@ public class AddTransactionViewModel extends ViewModel {
 
     public void addCategory(String name, String type, String colorHex, String iconName) {
         addCategoryUseCase.execute(new CategoryModel(name, type, colorHex, iconName));
+    }
+
+    public void deleteCategory(long categoryId) {
+        deleteCategoryUseCase.execute(categoryId);
     }
 
     public void saveExpense(double amount, String title, String category,

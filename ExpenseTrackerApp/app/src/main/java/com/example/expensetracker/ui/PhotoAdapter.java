@@ -13,11 +13,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.expensetracker.R;
 import com.example.expensetracker.core.domain.model.TransactionModel;
+import com.example.expensetracker.util.CurrencyFormatter;
 
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder> {
 
@@ -72,28 +71,13 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
             holder.ivPhoto.setImageResource(defaultRes);
         }
 
-        holder.tvAmount.setText(formatCompactCurrency(expense.getAmount()));
+        holder.tvAmount.setText(CurrencyFormatter.formatCompact(context, expense.getAmount()));
         holder.itemView.setOnClickListener(v -> listener.onPhotoClick(expense));
     }
 
     @Override
     public int getItemCount() {
         return photoTransactions.size();
-    }
-
-    private String formatCompactCurrency(double amount) {
-        Locale locale = Locale.US;
-        if (amount >= 1_000_000_000) {
-            return String.format(locale, "%.1fB ₫", amount / 1_000_000_000.0);
-        } else if (amount >= 1_000_000) {
-            return String.format(locale, "%.1fM ₫", amount / 1_000_000.0);
-        } else if (amount >= 1_000) {
-            return String.format(locale, "%.1fK ₫", amount / 1_000.0);
-        } else {
-            NumberFormat format = NumberFormat.getNumberInstance(locale);
-            format.setMinimumFractionDigits(0);
-            return format.format(amount) + " ₫";
-        }
     }
 
     static class PhotoViewHolder extends RecyclerView.ViewHolder {

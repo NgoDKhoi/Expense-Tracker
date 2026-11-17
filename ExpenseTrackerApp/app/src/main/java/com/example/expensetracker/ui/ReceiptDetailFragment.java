@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import com.bumptech.glide.Glide;
 import com.example.expensetracker.R;
+import com.example.expensetracker.util.CurrencyFormatter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -109,8 +110,7 @@ public class ReceiptDetailFragment extends Fragment {
 
         tvCategory.setText(category != null ? category : "Other");
         
-        java.text.NumberFormat format = java.text.NumberFormat.getNumberInstance(java.util.Locale.US); format.setMinimumFractionDigits(0); format.setMaximumFractionDigits(2);
-        tvAmount.setText(format.format(amount) + " ₫");
+        tvAmount.setText(CurrencyFormatter.formatFull(requireContext(), amount));
 
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy - HH:mm", Locale.getDefault());
         tvDate.setText(sdf.format(new Date(timestamp)));

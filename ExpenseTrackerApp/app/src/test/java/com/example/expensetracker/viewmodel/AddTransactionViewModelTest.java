@@ -8,6 +8,7 @@ import com.example.expensetracker.core.domain.model.TransactionModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
 import com.example.expensetracker.core.domain.usecase.AddCategoryUseCase;
 import com.example.expensetracker.core.domain.usecase.AddTransactionUseCase;
+import com.example.expensetracker.core.domain.usecase.DeleteCategoryUseCase;
 import com.example.expensetracker.core.domain.usecase.GetAllWalletsUseCase;
 import com.example.expensetracker.core.domain.usecase.GetCategoriesUseCase;
 import com.example.expensetracker.viewmodel.AddTransactionViewModel.ParsedVoiceExpense;
@@ -34,6 +35,7 @@ public class AddTransactionViewModelTest {
     private GetAllWalletsUseCase getAllWalletsUseCase;
     private GetCategoriesUseCase getCategoriesUseCase;
     private AddCategoryUseCase addCategoryUseCase;
+    private DeleteCategoryUseCase deleteCategoryUseCase;
     private AddTransactionViewModel viewModel;
 
     @Before
@@ -42,13 +44,15 @@ public class AddTransactionViewModelTest {
         getAllWalletsUseCase = mock(GetAllWalletsUseCase.class);
         getCategoriesUseCase = mock(GetCategoriesUseCase.class);
         addCategoryUseCase = mock(AddCategoryUseCase.class);
+        deleteCategoryUseCase = mock(DeleteCategoryUseCase.class);
 
         when(getAllWalletsUseCase.execute()).thenReturn(new MutableLiveData<List<WalletModel>>(Collections.emptyList()));
         viewModel = new AddTransactionViewModel(
                 addTransactionUseCase,
                 getAllWalletsUseCase,
                 getCategoriesUseCase,
-                addCategoryUseCase
+                addCategoryUseCase,
+                deleteCategoryUseCase
         );
     }
 
@@ -155,5 +159,11 @@ public class AddTransactionViewModelTest {
         assertEquals("Bún bò", saved.getNote());
         assertEquals(1L, saved.getWalletId());
         assertEquals("EXPENSE", saved.getType());
+    }
+
+    @Test
+    public void deleteCategory_delegatesToUseCase() {
+        viewModel.deleteCategory(42L);
+        verify(deleteCategoryUseCase).execute(42L);
     }
 }

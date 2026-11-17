@@ -201,4 +201,14 @@
     <string name="error_gallery_copy_failed">Không thể tải ảnh đã chọn</string>
     <string name="type_expense_label">Chi tiêu</string>
     <string name="type_income_label">Thu nhập</string>
+    <string name="piggy_wizard_section_title">🐷 Heo Tư Vấn Ngân Sách 3 Bước</string>
+    <string name="piggy_wizard_income_hint">Thu nhập hàng tháng (₫)</string>
+    <string name="piggy_wizard_fixed_hint">Chi phí cố định tháng - nhà, điện… (₫)</string>
+    <string name="piggy_wizard_saving_label">Mục tiêu tiết kiệm: %1$d%%</string>
+    <string name="piggy_wizard_calc_btn">✨ Tính hạn mức gợi ý</string>
+    <string name="piggy_wizard_suggested_msg">Heo gợi ý hạn mức: %1$s / ngày</string>
+    <string name="leaderboard_add_friend_btn">+ Kết bạn</string>
+    <string name="dialog_add_friend_title">Kết bạn qua @username</string>
+    <string name="dialog_add_friend_hint">\@username (VD: \@thanhtruc)</string>
+    <string name="msg_friend_added">Đã thêm %1$s vào danh sách Bạn bè</string>
 </resources>

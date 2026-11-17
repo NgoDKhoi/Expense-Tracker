@@ -8,9 +8,11 @@ import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModel;
 
 import com.example.expensetracker.core.domain.Result;
+import com.example.expensetracker.core.domain.model.LeaderboardProfileModel;
 import com.example.expensetracker.core.domain.model.TransactionModel;
 import com.example.expensetracker.core.domain.model.UserModel;
 import com.example.expensetracker.core.domain.repository.IAuthRepository;
+import com.example.expensetracker.core.domain.repository.ILeaderboardRepository;
 import com.example.expensetracker.core.domain.usecase.GetAllTransactionsUseCase;
 import com.example.expensetracker.core.domain.usecase.SendAiChatPromptUseCase;
 
@@ -20,9 +22,11 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.function.LongSupplier;
@@ -60,6 +64,8 @@ public class GamificationViewModel extends ViewModel {
     public static final double DEFAULT_DAILY_BUDGET_LIMIT = 100_000.0;
     public static final double HAPPY_RATIO = 0.80;
     public static final String KEY_DAILY_BUDGET_LIMIT = "gamification_daily_limit";
+    public static final String KEY_ACTIVE_CHECKIN_DAYS = "gamification_active_days";
+    public static final String KEY_FRIEND_HANDLES = "gamification_friend_handles";
     public static final String GUEST_DISPLAY_NAME = "Bạn (Khách)";
     public static final String GUEST_HANDLE = "@guest";
     private static final int MAX_LOOKBACK_DAYS = 3650;
@@ -192,6 +198,7 @@ public class GamificationViewModel extends ViewModel {
     private final IAuthRepository authRepository;
     private final SharedPreferences prefs;
     private final SendAiChatPromptUseCase sendAiChatPromptUseCase;
+    private final ILeaderboardRepository leaderboardRepository;
     private final Executor executor;
     private final LongSupplier clock;
     private final LiveData<List<TransactionModel>> transactionsSource;
@@ -205,8 +212,11 @@ public class GamificationViewModel extends ViewModel {
     private final MutableLiveData<Boolean> isAiTyping = new MutableLiveData<>(false);
 
     private final List<LeaderboardEntry> mockPool = new ArrayList<>();
+    private final Set<Long> activeCheckInDays = new HashSet<>();
+    private final Set<String> friendHandles = new HashSet<>();
     private final List<ChatMessage> messageHistory = new ArrayList<>();
     private final Object chatLock = new Object();
+    private final Object poolLock = new Object();
 
     private List<TransactionModel> latestTransactions = Collections.emptyList();
     private boolean hasUserSentChat = false;
@@ -226,8 +236,10 @@ public class GamificationViewModel extends ViewModel {
                                  IAuthRepository authRepository,
                                  SharedPreferences prefs,
                                  SendAiChatPromptUseCase sendAiChatPromptUseCase,
+                                 ILeaderboardRepository leaderboardRepository,
                                  ExecutorService executorService) {
-        this(getAllTransactionsUseCase, authRepository, prefs, sendAiChatPromptUseCase, executorService, System::currentTimeMillis);
+        this(getAllTransactionsUseCase, authRepository, prefs, sendAiChatPromptUseCase,
+                leaderboardRepository, executorService, System::currentTimeMillis);
     }
 
     GamificationViewModel(GetAllTransactionsUseCase getAllTransactionsUseCase,
@@ -236,10 +248,21 @@ public class GamificationViewModel extends ViewModel {
                           SendAiChatPromptUseCase sendAiChatPromptUseCase,
                           Executor executor,
                           LongSupplier clock) {
+        this(getAllTransactionsUseCase, authRepository, prefs, sendAiChatPromptUseCase, null, executor, clock);
+    }
+
+    GamificationViewModel(GetAllTransactionsUseCase getAllTransactionsUseCase,
+                          IAuthRepository authRepository,
+                          SharedPreferences prefs,
+                          SendAiChatPromptUseCase sendAiChatPromptUseCase,
+                          ILeaderboardRepository leaderboardRepository,
+                          Executor executor,
+                          LongSupplier clock) {
         this.getAllTransactionsUseCase = getAllTransactionsUseCase;
         this.authRepository = authRepository;
         this.prefs = prefs;
         this.sendAiChatPromptUseCase = sendAiChatPromptUseCase;
+        this.leaderboardRepository = leaderboardRepository;
         this.executor = executor != null ? executor : Runnable::run;
         this.clock = clock != null ? clock : System::currentTimeMillis;
 
@@ -250,6 +273,10 @@ public class GamificationViewModel extends ViewModel {
                 this.dailyLimit = loaded;
             }
         }
+
+        loadActiveCheckInDays();
+        addActiveCheckInDay(this.clock.getAsLong());
+        loadFriendHandles();
 
         refreshUserIdentityInternal();
         initMockLeaderboard();
@@ -350,6 +377,105 @@ public class GamificationViewModel extends ViewModel {
         publishLeaderboard();
     }
 
+    public static double suggestDailyBudget(double monthlyIncome, double fixedExpenses, int savingPercent) {
+        if (monthlyIncome <= 0) {
+            return DEFAULT_DAILY_BUDGET_LIMIT;
+        }
+        int pct = Math.max(0, Math.min(80, savingPercent));
+        double savings = monthlyIncome * (pct / 100.0);
+        double disposable = monthlyIncome - savings - Math.max(0.0, fixedExpenses);
+        if (disposable <= 0) {
+            return Math.max(20_000.0, Math.round((monthlyIncome * 0.10) / 30.0 / 1000.0) * 1000.0);
+        }
+        return Math.max(10_000.0, Math.round((disposable / 30.0) / 1000.0) * 1000.0);
+    }
+
+    public double getCurrentMonthIncome() {
+        return buildFinancialSnapshot().monthlyIncome;
+    }
+
+    public void recordDailyCheckIn(long epochMillis) {
+        addActiveCheckInDay(epochMillis);
+        recalculateFromTransactions();
+    }
+
+    public boolean addFriendByUsername(String rawHandle) {
+        if (rawHandle == null) {
+            return false;
+        }
+        String clean = rawHandle.trim();
+        if (clean.length() < 2) {
+            return false;
+        }
+        String normalized = clean.startsWith("@")
+                ? clean.toLowerCase(Locale.ROOT)
+                : "@" + clean.toLowerCase(Locale.ROOT);
+        if (normalized.length() < 3) {
+            return false;
+        }
+
+        synchronized (poolLock) {
+            friendHandles.add(normalized);
+            saveFriendHandles();
+
+            boolean found = false;
+            for (int i = 0; i < mockPool.size(); i++) {
+                LeaderboardEntry e = mockPool.get(i);
+                if (e.username != null && e.username.equalsIgnoreCase(normalized)) {
+                    mockPool.set(i, new LeaderboardEntry(
+                            0,
+                            e.displayName,
+                            e.username,
+                            e.streakDays,
+                            e.totalSafeDays,
+                            e.stage,
+                            e.isCurrentUser,
+                            true
+                    ));
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                mockPool.add(new LeaderboardEntry(
+                        0,
+                        normalized.substring(1),
+                        normalized,
+                        1,
+                        1,
+                        EvolutionStage.BABY,
+                        false,
+                        true
+                ));
+            }
+        }
+        publishLeaderboard();
+        return true;
+    }
+
+    public void syncLeaderboardWithCloud() {
+        UserModel signedUser = authRepository != null ? authRepository.getCurrentUser() : null;
+        if (leaderboardRepository == null || signedUser == null) {
+            return;
+        }
+        LeaderboardProfileModel myProfile = new LeaderboardProfileModel(
+                signedUser.getId(),
+                currentUserDisplayName,
+                currentUserHandle,
+                streakDays,
+                totalSafeDays,
+                computeStage(streakDays).name()
+        );
+        executor.execute(() -> {
+            leaderboardRepository.upsertMyProfile(myProfile);
+            Result<List<LeaderboardProfileModel>> remote = leaderboardRepository.fetchTopProfiles(50);
+            if (remote != null && remote.isSuccess() && remote.getData() != null && !remote.getData().isEmpty()) {
+                mergeRemoteLeaderboardProfiles(remote.getData(), signedUser);
+                publishLeaderboard();
+            }
+        });
+    }
+
     public void setRankingMetric(RankingMetric newMetric) {
         if (newMetric == null || this.metric == newMetric) {
             return;
@@ -412,6 +538,7 @@ public class GamificationViewModel extends ViewModel {
     private void recalculateFromTransactions() {
         long todayStart = startOfDayMillis(clock.getAsLong());
         Map<Long, Double> expenseByDay = new HashMap<>();
+        Set<Long> transactionDays = new HashSet<>();
         long earliestDayStart = Long.MAX_VALUE;
 
         for (TransactionModel t : latestTransactions) {
@@ -422,6 +549,7 @@ public class GamificationViewModel extends ViewModel {
             if (dayStart > todayStart) {
                 continue;
             }
+            transactionDays.add(dayStart);
             if (dayStart < earliestDayStart) {
                 earliestDayStart = dayStart;
             }
@@ -433,7 +561,7 @@ public class GamificationViewModel extends ViewModel {
 
         this.dailySpent = expenseByDay.getOrDefault(todayStart, 0.0);
 
-        if (earliestDayStart == Long.MAX_VALUE) {
+        if (transactionDays.isEmpty()) {
             this.streakDays = 0;
             this.totalSafeDays = 0;
         } else {
@@ -455,8 +583,9 @@ public class GamificationViewModel extends ViewModel {
                 if (dayKey > todayStart) {
                     break;
                 }
+                boolean isActive = transactionDays.contains(dayKey) || activeCheckInDays.contains(dayKey);
                 double spent = expenseByDay.getOrDefault(dayKey, 0.0);
-                if (spent <= dailyLimit) {
+                if (isActive && spent <= dailyLimit) {
                     streak++;
                     safeDays++;
                 } else {
@@ -656,32 +785,142 @@ public class GamificationViewModel extends ViewModel {
         }
     }
 
+    private void loadActiveCheckInDays() {
+        if (prefs == null) {
+            return;
+        }
+        Set<String> stored = prefs.getStringSet(KEY_ACTIVE_CHECKIN_DAYS, null);
+        if (stored != null) {
+            for (String dayStr : stored) {
+                try {
+                    activeCheckInDays.add(Long.parseLong(dayStr));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+    }
+
+    private void addActiveCheckInDay(long epochMillis) {
+        long dayStart = startOfDayMillis(epochMillis);
+        if (activeCheckInDays.add(dayStart) && prefs != null) {
+            Set<String> serialized = new HashSet<>(activeCheckInDays.size());
+            for (Long day : activeCheckInDays) {
+                serialized.add(String.valueOf(day));
+            }
+            SharedPreferences.Editor editor = prefs.edit();
+            if (editor != null) {
+                editor.putStringSet(KEY_ACTIVE_CHECKIN_DAYS, serialized).apply();
+            }
+        }
+    }
+
+    private void loadFriendHandles() {
+        Set<String> stored = prefs != null ? prefs.getStringSet(KEY_FRIEND_HANDLES, null) : null;
+        if (stored != null && !stored.isEmpty()) {
+            for (String handle : stored) {
+                if (handle != null && !handle.trim().isEmpty()) {
+                    friendHandles.add(handle.trim().toLowerCase(Locale.ROOT));
+                }
+            }
+        } else {
+            friendHandles.add("@minhanh");
+            friendHandles.add("@viethoang");
+            friendHandles.add("@giahuy");
+        }
+    }
+
+    private void saveFriendHandles() {
+        if (prefs == null) {
+            return;
+        }
+        SharedPreferences.Editor editor = prefs.edit();
+        if (editor != null) {
+            editor.putStringSet(KEY_FRIEND_HANDLES, new HashSet<>(friendHandles)).apply();
+        }
+    }
+
+    private void mergeRemoteLeaderboardProfiles(List<LeaderboardProfileModel> remoteProfiles, UserModel signedUser) {
+        synchronized (poolLock) {
+            for (LeaderboardProfileModel profile : remoteProfiles) {
+                if (profile == null || profile.getUsername() == null) {
+                    continue;
+                }
+                String cleanHandle = profile.getUsername().trim();
+                String normalizedHandle = cleanHandle.startsWith("@") ? cleanHandle : "@" + cleanHandle;
+                boolean isMe = (signedUser != null && signedUser.getId() != null && signedUser.getId().equals(profile.getUserId()))
+                        || normalizedHandle.equalsIgnoreCase(currentUserHandle);
+                if (isMe) {
+                    continue;
+                }
+                boolean isFriend = friendHandles.contains(normalizedHandle.toLowerCase(Locale.ROOT));
+                EvolutionStage stage = parseStageOrDefault(profile.getStage(), profile.getStreakDays());
+                LeaderboardEntry entry = new LeaderboardEntry(
+                        0,
+                        profile.getDisplayName() != null ? profile.getDisplayName() : normalizedHandle,
+                        normalizedHandle,
+                        profile.getStreakDays(),
+                        profile.getTotalSafeDays(),
+                        stage,
+                        false,
+                        isFriend
+                );
+
+                boolean replaced = false;
+                for (int i = 0; i < mockPool.size(); i++) {
+                    LeaderboardEntry existing = mockPool.get(i);
+                    if (existing.username != null && existing.username.equalsIgnoreCase(normalizedHandle)) {
+                        mockPool.set(i, entry);
+                        replaced = true;
+                        break;
+                    }
+                }
+                if (!replaced) {
+                    mockPool.add(entry);
+                }
+            }
+        }
+    }
+
+    private static EvolutionStage parseStageOrDefault(String stageStr, int streakDays) {
+        if (stageStr != null) {
+            try {
+                return EvolutionStage.valueOf(stageStr);
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        return computeStage(streakDays);
+    }
+
     private void initMockLeaderboard() {
-        mockPool.clear();
-        mockPool.add(new LeaderboardEntry(0, "Minh Anh", "@minhanh", 56, 78, EvolutionStage.ROYAL, false, true));
-        mockPool.add(new LeaderboardEntry(0, "Việt Hoàng", "@viethoang", 28, 64, EvolutionStage.ADULT, false, true));
-        mockPool.add(new LeaderboardEntry(0, currentUserDisplayName, currentUserHandle, streakDays, totalSafeDays, computeStage(streakDays), true, true));
-        mockPool.add(new LeaderboardEntry(0, "Thanh Trúc", "@thanhtruc", 22, 41, EvolutionStage.ADULT, false, false));
-        mockPool.add(new LeaderboardEntry(0, "Quốc Bảo", "@quocbao", 19, 85, EvolutionStage.STUDENT, false, false));
-        mockPool.add(new LeaderboardEntry(0, "Gia Huy", "@giahuy", 9, 27, EvolutionStage.STUDENT, false, true));
-        mockPool.add(new LeaderboardEntry(0, "Thảo Vy", "@thaovy", 5, 19, EvolutionStage.BABY, false, false));
+        synchronized (poolLock) {
+            mockPool.clear();
+            mockPool.add(new LeaderboardEntry(0, "Minh Anh", "@minhanh", 56, 78, EvolutionStage.ROYAL, false, friendHandles.contains("@minhanh")));
+            mockPool.add(new LeaderboardEntry(0, "Việt Hoàng", "@viethoang", 28, 64, EvolutionStage.ADULT, false, friendHandles.contains("@viethoang")));
+            mockPool.add(new LeaderboardEntry(0, currentUserDisplayName, currentUserHandle, streakDays, totalSafeDays, computeStage(streakDays), true, true));
+            mockPool.add(new LeaderboardEntry(0, "Thanh Trúc", "@thanhtruc", 22, 41, EvolutionStage.ADULT, false, friendHandles.contains("@thanhtruc")));
+            mockPool.add(new LeaderboardEntry(0, "Quốc Bảo", "@quocbao", 19, 85, EvolutionStage.STUDENT, false, friendHandles.contains("@quocbao")));
+            mockPool.add(new LeaderboardEntry(0, "Gia Huy", "@giahuy", 9, 27, EvolutionStage.STUDENT, false, friendHandles.contains("@giahuy")));
+            mockPool.add(new LeaderboardEntry(0, "Thảo Vy", "@thaovy", 5, 19, EvolutionStage.BABY, false, friendHandles.contains("@thaovy")));
+        }
     }
 
     private void updateCurrentUserInMockPool() {
-        for (int i = 0; i < mockPool.size(); i++) {
-            LeaderboardEntry e = mockPool.get(i);
-            if (e.isCurrentUser) {
-                mockPool.set(i, new LeaderboardEntry(
-                        0,
-                        currentUserDisplayName,
-                        currentUserHandle,
-                        streakDays,
-                        totalSafeDays,
-                        computeStage(streakDays),
-                        true,
-                        e.isFriend
-                ));
-                break;
+        synchronized (poolLock) {
+            for (int i = 0; i < mockPool.size(); i++) {
+                LeaderboardEntry e = mockPool.get(i);
+                if (e.isCurrentUser) {
+                    mockPool.set(i, new LeaderboardEntry(
+                            0,
+                            currentUserDisplayName,
+                            currentUserHandle,
+                            streakDays,
+                            totalSafeDays,
+                            computeStage(streakDays),
+                            true,
+                            e.isFriend
+                    ));
+                    break;
+                }
             }
         }
     }
@@ -703,33 +942,36 @@ public class GamificationViewModel extends ViewModel {
     }
 
     private void publishLeaderboard() {
-        List<LeaderboardEntry> filtered = new ArrayList<>();
-        for (LeaderboardEntry entry : mockPool) {
-            if (scope == RankingScope.GLOBAL || entry.isFriend || entry.isCurrentUser) {
-                filtered.add(entry);
+        List<LeaderboardEntry> ranked;
+        synchronized (poolLock) {
+            List<LeaderboardEntry> filtered = new ArrayList<>();
+            for (LeaderboardEntry entry : mockPool) {
+                if (scope == RankingScope.GLOBAL || entry.isFriend || entry.isCurrentUser) {
+                    filtered.add(entry);
+                }
+            }
+
+            Comparator<LeaderboardEntry> comparator = metric == RankingMetric.STREAK
+                    ? (a, b) -> Integer.compare(b.streakDays, a.streakDays)
+                    : (a, b) -> Integer.compare(b.totalSafeDays, a.totalSafeDays);
+            Collections.sort(filtered, comparator);
+
+            ranked = new ArrayList<>(filtered.size());
+            for (int i = 0; i < filtered.size(); i++) {
+                LeaderboardEntry raw = filtered.get(i);
+                ranked.add(new LeaderboardEntry(
+                        i + 1,
+                        raw.displayName,
+                        raw.username,
+                        raw.streakDays,
+                        raw.totalSafeDays,
+                        raw.stage,
+                        raw.isCurrentUser,
+                        raw.isFriend
+                ));
             }
         }
-
-        Comparator<LeaderboardEntry> comparator = metric == RankingMetric.STREAK
-                ? (a, b) -> Integer.compare(b.streakDays, a.streakDays)
-                : (a, b) -> Integer.compare(b.totalSafeDays, a.totalSafeDays);
-        Collections.sort(filtered, comparator);
-
-        List<LeaderboardEntry> ranked = new ArrayList<>(filtered.size());
-        for (int i = 0; i < filtered.size(); i++) {
-            LeaderboardEntry raw = filtered.get(i);
-            ranked.add(new LeaderboardEntry(
-                    i + 1,
-                    raw.displayName,
-                    raw.username,
-                    raw.streakDays,
-                    raw.totalSafeDays,
-                    raw.stage,
-                    raw.isCurrentUser,
-                    raw.isFriend
-            ));
-        }
-        leaderboardEntries.setValue(ranked);
+        leaderboardEntries.postValue(ranked);
     }
 
     private static String[] speechesFor(Mood mood) {

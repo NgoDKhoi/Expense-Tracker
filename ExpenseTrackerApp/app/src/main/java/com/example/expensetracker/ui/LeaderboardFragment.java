@@ -1,10 +1,14 @@
 package com.example.expensetracker.ui;
 
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,6 +27,7 @@ import com.example.expensetracker.viewmodel.GamificationViewModel.RankingMetric;
 import com.example.expensetracker.viewmodel.GamificationViewModel.RankingScope;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.List;
 
@@ -62,12 +67,15 @@ public class LeaderboardFragment extends Fragment {
 
         bindViews(view);
         setupRecyclerView(view);
-        setupInteractions();
+        setupInteractions(view);
         observeViewModel();
 
         requireActivity().getSupportFragmentManager().setFragmentResultListener(
                 AuthFragment.RESULT_AUTH_CHANGED, getViewLifecycleOwner(),
-                (key, result) -> viewModel.refreshUserIdentity());
+                (key, result) -> {
+                    viewModel.refreshUserIdentity();
+                    viewModel.syncLeaderboardWithCloud();
+                });
     }
 
     @Override
@@ -75,6 +83,7 @@ public class LeaderboardFragment extends Fragment {
         super.onResume();
         if (viewModel != null) {
             viewModel.refreshUserIdentity();
+            viewModel.syncLeaderboardWithCloud();
         }
     }
 
@@ -96,7 +105,7 @@ public class LeaderboardFragment extends Fragment {
         rvLeaderboard.setAdapter(leaderboardAdapter);
     }
 
-    private void setupInteractions() {
+    private void setupInteractions(@NonNull View view) {
         btnMetricStreak.setOnClickListener(v -> {
             btnMetricStreak.setChecked(true);
             btnMetricTotalDays.setChecked(false);
@@ -116,6 +125,40 @@ public class LeaderboardFragment extends Fragment {
                 viewModel.setRankingScope(RankingScope.GLOBAL);
             }
         });
+
+        View btnAddFriend = view.findViewById(R.id.btn_add_friend);
+        if (btnAddFriend != null) {
+            btnAddFriend.setOnClickListener(v -> showAddFriendDialog());
+        }
+    }
+
+    private void showAddFriendDialog() {
+        int pad = Math.round(20 * requireContext().getResources().getDisplayMetrics().density);
+        FrameLayout container = new FrameLayout(requireContext());
+        container.setPadding(pad, pad / 2, pad, 0);
+
+        EditText input = new EditText(requireContext());
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        input.setHint(R.string.dialog_add_friend_hint);
+        container.addView(input);
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.dialog_add_friend_title)
+                .setView(container)
+                .setNegativeButton(R.string.action_cancel, null)
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    String handle = input.getText() != null ? input.getText().toString().trim() : "";
+                    if (viewModel.addFriendByUsername(handle)) {
+                        String normalized = handle.startsWith("@") ? handle : "@" + handle;
+                        viewModel.setRankingScope(RankingScope.FRIENDS);
+                        Toast.makeText(
+                                requireContext(),
+                                getString(R.string.msg_friend_added, normalized),
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                })
+                .show();
     }
 
     private void observeViewModel() {

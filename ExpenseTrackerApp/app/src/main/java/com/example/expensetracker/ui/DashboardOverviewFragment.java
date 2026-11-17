@@ -1,11 +1,14 @@
 package com.example.expensetracker.ui;
 
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,21 +21,37 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.expensetracker.ExpenseTrackerApplication;
 import com.example.expensetracker.R;
+import com.example.expensetracker.core.domain.model.CategoryModel;
 import com.example.expensetracker.core.domain.model.CategoryTotalModel;
 import com.example.expensetracker.core.domain.model.TransactionModel;
 import com.example.expensetracker.core.domain.model.WalletModel;
+import com.example.expensetracker.core.domain.usecase.DeleteCategoryUseCase;
+import com.example.expensetracker.util.CurrencyFormatter;
 import com.example.expensetracker.viewmodel.HomeViewModel;
+import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.PieChart;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.data.BarData;
+import com.github.mikephil.charting.data.BarDataSet;
+import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.textfield.TextInputEditText;
 
-import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -45,10 +64,23 @@ public class DashboardOverviewFragment extends Fragment {
     private TextView tvTotalExpense;
     private TextView tvTotalIncome;
     private TextView tvTotalBalance;
+    private TextView tvNetSavings;
     private MaterialButtonToggleGroup toggleTimeFilter;
+    private MaterialButtonToggleGroup toggleChartType;
+    private ImageButton btnDashboardSettings;
     private PieChart pieChart;
+    private BarChart barChart;
     private RecyclerView rvRecentExpenses;
+
     private boolean isChartInitialized = false;
+    private boolean showBarChart = false;
+    private double latestTotalExpense = 0.0;
+    private double latestTotalIncome = 0.0;
+    private double latestTotalBalance = 0.0;
+    private List<CategoryTotalModel> latestCategoryTotals = new ArrayList<>();
+    private List<CategoryModel> latestCategories = new ArrayList<>();
+    private final Map<String, String> categoryColorMap = new HashMap<>();
+    private List<TransactionModel> latestAllTransactions = new ArrayList<>();
 
     @Nullable
     @Override
@@ -66,8 +98,12 @@ public class DashboardOverviewFragment extends Fragment {
         tvTotalExpense = view.findViewById(R.id.tv_total_expense);
         tvTotalIncome = view.findViewById(R.id.tv_total_income);
         tvTotalBalance = view.findViewById(R.id.tv_total_balance);
+        tvNetSavings = view.findViewById(R.id.tv_net_savings);
         toggleTimeFilter = view.findViewById(R.id.toggle_time_filter);
+        toggleChartType = view.findViewById(R.id.toggle_chart_type);
+        btnDashboardSettings = view.findViewById(R.id.btn_dashboard_settings);
         pieChart = view.findViewById(R.id.pie_chart);
+        barChart = view.findViewById(R.id.bar_chart);
         rvRecentExpenses = view.findViewById(R.id.rv_recent_expenses);
 
         adapter = new TransactionAdapter();
@@ -107,21 +143,37 @@ public class DashboardOverviewFragment extends Fragment {
                 } else if (checkedId == R.id.btn_filter_year) {
                     viewModel.setTimeFilter(HomeViewModel.TimeFilter.YEAR);
                 }
+                if (showBarChart) {
+                    setupBarChart();
+                }
             }
         });
 
-        viewModel.getRecentExpenses().observe(getViewLifecycleOwner(), expenses -> {
-            adapter.setExpenses(expenses);
+        toggleChartType.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (isChecked) {
+                showBarChart = (checkedId == R.id.btn_chart_bar);
+                pieChart.setVisibility(showBarChart ? View.GONE : View.VISIBLE);
+                barChart.setVisibility(showBarChart ? View.VISIBLE : View.GONE);
+                if (showBarChart) {
+                    setupBarChart();
+                } else {
+                    setupPieChart(latestCategoryTotals);
+                }
+            }
         });
 
+        btnDashboardSettings.setOnClickListener(v -> showQuickSettingsDialog());
+
+        viewModel.getRecentExpenses().observe(getViewLifecycleOwner(), expenses -> adapter.setExpenses(expenses));
+
         viewModel.getTotalExpense().observe(getViewLifecycleOwner(), total -> {
-            if (total == null) total = 0.0;
-            tvTotalExpense.setText(formatFullCurrency(total));
+            latestTotalExpense = total != null ? total : 0.0;
+            renderTotalsAndSavings();
         });
 
         viewModel.getTotalIncome().observe(getViewLifecycleOwner(), total -> {
-            if (total == null) total = 0.0;
-            tvTotalIncome.setText(formatFullCurrency(total));
+            latestTotalIncome = total != null ? total : 0.0;
+            renderTotalsAndSavings();
         });
 
         viewModel.getWallets().observe(getViewLifecycleOwner(), wallets -> {
@@ -131,17 +183,72 @@ public class DashboardOverviewFragment extends Fragment {
                     totalBalance += w.getBalance();
                 }
             }
-            tvTotalBalance.setText(getString(R.string.label_total_balance) + ": " + formatCompactCurrency(totalBalance));
+            latestTotalBalance = totalBalance;
+            tvTotalBalance.setText(getString(R.string.label_total_balance) + ": "
+                    + CurrencyFormatter.formatCompact(requireContext(), latestTotalBalance));
+        });
+
+        viewModel.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
+            latestCategories = categories != null ? categories : new ArrayList<>();
+            categoryColorMap.clear();
+            for (CategoryModel cat : latestCategories) {
+                if (cat == null || cat.getName() == null || cat.getColorHex() == null) continue;
+                String key = cat.getName().trim().toLowerCase(Locale.ROOT);
+                if ("EXPENSE".equalsIgnoreCase(cat.getType()) || !categoryColorMap.containsKey(key)) {
+                    categoryColorMap.put(key, cat.getColorHex());
+                }
+            }
+            if (!showBarChart) {
+                setupPieChart(latestCategoryTotals);
+            }
         });
 
         viewModel.getCategoryTotals().observe(getViewLifecycleOwner(), categoryTotals -> {
-            if (categoryTotals != null) {
-                setupPieChart(categoryTotals);
+            latestCategoryTotals = categoryTotals != null ? categoryTotals : new ArrayList<>();
+            if (!showBarChart) {
+                setupPieChart(latestCategoryTotals);
+            }
+        });
+
+        viewModel.getAllExpenses().observe(getViewLifecycleOwner(), transactions -> {
+            latestAllTransactions = transactions != null ? transactions : new ArrayList<>();
+            if (showBarChart) {
+                setupBarChart();
             }
         });
     }
 
+    private void renderTotalsAndSavings() {
+        if (!isAdded()) return;
+        tvTotalExpense.setText(CurrencyFormatter.formatFull(requireContext(), latestTotalExpense));
+        tvTotalIncome.setText(CurrencyFormatter.formatFull(requireContext(), latestTotalIncome));
+
+        double net = latestTotalIncome - latestTotalExpense;
+        String formattedNet = CurrencyFormatter.formatFull(requireContext(), Math.abs(net));
+        if (net >= 0) {
+            tvNetSavings.setText(getString(R.string.label_net_savings_positive, formattedNet));
+            tvNetSavings.setTextColor(Color.parseColor("#4CAF50"));
+        } else {
+            tvNetSavings.setText(getString(R.string.label_net_savings_negative, formattedNet));
+            tvNetSavings.setTextColor(Color.parseColor("#FF5722"));
+        }
+    }
+
+    private void refreshCurrencyUi() {
+        tvTotalBalance.setText(getString(R.string.label_total_balance) + ": "
+                + CurrencyFormatter.formatCompact(requireContext(), latestTotalBalance));
+        renderTotalsAndSavings();
+        adapter.notifyDataSetChanged();
+    }
+
     private void setupPieChart(List<CategoryTotalModel> categoryTotals) {
+        if (categoryTotals == null || categoryTotals.isEmpty()) {
+            pieChart.clear();
+            pieChart.setNoDataTextColor(Color.LTGRAY);
+            pieChart.invalidate();
+            return;
+        }
+
         List<PieEntry> entries = new ArrayList<>();
         ArrayList<Integer> colors = new ArrayList<>();
 
@@ -154,26 +261,7 @@ public class DashboardOverviewFragment extends Fragment {
             double percentage = totalSum == 0 ? 0 : (ct.getTotal() / totalSum) * 100;
             String label = String.format(Locale.getDefault(), "%s %.0f%%", ct.getCategory(), percentage);
             entries.add(new PieEntry((float) ct.getTotal(), label));
-            switch (ct.getCategory()) {
-                case "Food":
-                    colors.add(Color.parseColor("#4CAF50"));
-                    break;
-                case "Transport":
-                    colors.add(Color.parseColor("#2196F3"));
-                    break;
-                case "Utilities":
-                    colors.add(Color.parseColor("#FF9800"));
-                    break;
-                case "Shopping":
-                    colors.add(Color.parseColor("#9C27B0"));
-                    break;
-                case "Entertainment":
-                    colors.add(Color.parseColor("#E91E63"));
-                    break;
-                default:
-                    colors.add(Color.parseColor("#607D8B"));
-                    break;
-            }
+            colors.add(resolveCategoryColor(ct.getCategory()));
         }
 
         PieDataSet dataSet = new PieDataSet(entries, "Categories");
@@ -197,23 +285,245 @@ public class DashboardOverviewFragment extends Fragment {
         }
     }
 
-    private String formatCompactCurrency(double amount) {
-        Locale locale = Locale.US;
-        if (amount >= 1_000_000_000) {
-            return String.format(locale, "%.1fB ₫", amount / 1_000_000_000.0);
-        } else if (amount >= 1_000_000) {
-            return String.format(locale, "%.1fM ₫", amount / 1_000_000.0);
-        } else if (amount >= 1_000) {
-            return String.format(locale, "%.1fK ₫", amount / 1_000.0);
-        } else {
-            return formatFullCurrency(amount);
+    private int resolveCategoryColor(String categoryName) {
+        if (categoryName != null) {
+            String hex = categoryColorMap.get(categoryName.trim().toLowerCase(Locale.ROOT));
+            if (hex != null) {
+                try {
+                    return Color.parseColor(hex);
+                } catch (IllegalArgumentException ignored) {
+                    // Fallback below
+                }
+            }
+            switch (categoryName) {
+                case "Food":
+                    return Color.parseColor("#4CAF50");
+                case "Transport":
+                    return Color.parseColor("#2196F3");
+                case "Utilities":
+                    return Color.parseColor("#FF9800");
+                case "Shopping":
+                    return Color.parseColor("#9C27B0");
+                case "Entertainment":
+                    return Color.parseColor("#E91E63");
+                default:
+                    return Color.parseColor("#607D8B");
+            }
         }
+        return Color.parseColor("#607D8B");
     }
 
-    private String formatFullCurrency(double amount) {
-        NumberFormat formatter = NumberFormat.getNumberInstance(Locale.US);
-        formatter.setMinimumFractionDigits(0);
-        formatter.setMaximumFractionDigits(2);
-        return formatter.format(amount) + " ₫";
+    private void setupBarChart() {
+        List<HomeViewModel.TrendBucket> buckets = HomeViewModel.buildTrendBuckets(
+                latestAllTransactions,
+                viewModel.getCurrentTimeFilter(),
+                System.currentTimeMillis()
+        );
+        if (buckets.isEmpty()) {
+            barChart.clear();
+            barChart.invalidate();
+            return;
+        }
+
+        List<BarEntry> incomeEntries = new ArrayList<>();
+        List<BarEntry> expenseEntries = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+
+        for (int i = 0; i < buckets.size(); i++) {
+            HomeViewModel.TrendBucket bucket = buckets.get(i);
+            labels.add(bucket.label);
+            incomeEntries.add(new BarEntry(i, (float) bucket.income));
+            expenseEntries.add(new BarEntry(i, (float) bucket.expense));
+        }
+
+        BarDataSet incomeSet = new BarDataSet(incomeEntries, getString(R.string.chart_legend_income));
+        incomeSet.setColor(Color.parseColor("#4CAF50"));
+        incomeSet.setDrawValues(false);
+
+        BarDataSet expenseSet = new BarDataSet(expenseEntries, getString(R.string.chart_legend_expense));
+        expenseSet.setColor(Color.parseColor("#FF5722"));
+        expenseSet.setDrawValues(false);
+
+        float barWidth = 0.34f;
+        float barSpace = 0.04f;
+        float groupSpace = 0.24f;
+
+        BarData barData = new BarData(incomeSet, expenseSet);
+        barData.setBarWidth(barWidth);
+        barChart.setData(barData);
+
+        XAxis xAxis = barChart.getXAxis();
+        xAxis.setValueFormatter(new IndexAxisValueFormatter(labels));
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setGranularity(1f);
+        xAxis.setGranularityEnabled(true);
+        xAxis.setCenterAxisLabels(true);
+        xAxis.setAxisMinimum(0f);
+        xAxis.setAxisMaximum(barData.getGroupWidth(groupSpace, barSpace) * buckets.size());
+        xAxis.setLabelCount(buckets.size());
+        xAxis.setTextSize(10f);
+        xAxis.setTextColor(Color.WHITE);
+        xAxis.setDrawGridLines(false);
+
+        barChart.getAxisLeft().setAxisMinimum(0f);
+        barChart.getAxisLeft().setTextColor(Color.WHITE);
+        barChart.getAxisLeft().setGridColor(0x22FFFFFF);
+        barChart.getAxisRight().setEnabled(false);
+        barChart.getLegend().setTextColor(Color.WHITE);
+        barChart.getDescription().setEnabled(false);
+        barChart.setFitBars(false);
+
+        barChart.groupBars(0f, groupSpace, barSpace);
+        barChart.animateY(450);
+        barChart.invalidate();
+    }
+
+    private void showQuickSettingsDialog() {
+        String[] options = {
+                getString(R.string.action_change_currency),
+                getString(R.string.action_manage_categories)
+        };
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.dialog_quick_settings_title)
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        showCurrencyPickerDialog();
+                    } else if (which == 1) {
+                        showManageCategoriesDialog();
+                    }
+                })
+                .setNegativeButton(R.string.action_cancel, null)
+                .show();
+    }
+
+    private void showCurrencyPickerDialog() {
+        final String[] symbols = {
+                CurrencyFormatter.SYMBOL_VND,
+                CurrencyFormatter.SYMBOL_USD,
+                CurrencyFormatter.SYMBOL_EUR
+        };
+        final String[] labels = {
+                getString(R.string.currency_option_vnd),
+                getString(R.string.currency_option_usd),
+                getString(R.string.currency_option_eur)
+        };
+        String current = CurrencyFormatter.getSymbol(requireContext());
+        int checkedItem = 0;
+        for (int i = 0; i < symbols.length; i++) {
+            if (symbols[i].equals(current)) {
+                checkedItem = i;
+                break;
+            }
+        }
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.dialog_currency_title)
+                .setSingleChoiceItems(labels, checkedItem, (dialog, which) -> {
+                    String chosen = symbols[which];
+                    CurrencyFormatter.setSymbol(requireContext(), chosen);
+                    refreshCurrencyUi();
+                    dialog.dismiss();
+                    Toast.makeText(requireContext(),
+                            getString(R.string.msg_currency_updated, chosen),
+                            Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton(R.string.action_cancel, null)
+                .show();
+    }
+
+    private void showManageCategoriesDialog() {
+        List<CategoryModel> categories = new ArrayList<>(latestCategories);
+        CharSequence[] items = new CharSequence[categories.size()];
+        for (int i = 0; i < categories.size(); i++) {
+            CategoryModel cat = categories.get(i);
+            boolean custom = DeleteCategoryUseCase.isCustomCategory(cat);
+            items[i] = cat.getName() + " [" + cat.getType() + "]" + (custom ? " • Tự tạo (xoá)" : " • Mặc định");
+        }
+
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.dialog_manage_categories_title)
+                .setPositiveButton(R.string.action_add_category, (d, w) -> showAddCategoryBottomSheet())
+                .setNegativeButton(R.string.action_cancel, null);
+
+        if (!categories.isEmpty()) {
+            builder.setItems(items, (dialog, which) -> {
+                CategoryModel picked = categories.get(which);
+                if (DeleteCategoryUseCase.isCustomCategory(picked)) {
+                    confirmDeleteCategory(picked);
+                } else {
+                    Toast.makeText(requireContext(), R.string.msg_default_category_protected, Toast.LENGTH_SHORT).show();
+                }
+            });
+        } else {
+            builder.setMessage(R.string.label_category);
+        }
+        builder.show();
+    }
+
+    private void confirmDeleteCategory(CategoryModel category) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.dialog_delete_category_title, category.getName()))
+                .setMessage(R.string.dialog_delete_category_message)
+                .setNegativeButton(R.string.action_cancel, null)
+                .setPositiveButton(R.string.action_delete, (d, w) -> {
+                    viewModel.deleteCategory(category.getId());
+                    Toast.makeText(requireContext(),
+                            getString(R.string.msg_category_deleted, category.getName()),
+                            Toast.LENGTH_SHORT).show();
+                })
+                .show();
+    }
+
+    private void showAddCategoryBottomSheet() {
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext(),
+                com.google.android.material.R.style.Theme_Design_BottomSheetDialog);
+        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_category, null);
+        dialog.setContentView(dialogView);
+
+        TextInputEditText etName = dialogView.findViewById(R.id.et_new_category_name);
+        MaterialButtonToggleGroup typeToggle = dialogView.findViewById(R.id.toggle_dialog_type);
+        ChipGroup colorGroup = dialogView.findViewById(R.id.chip_group_colors);
+        MaterialButton btnCancel = dialogView.findViewById(R.id.btn_cancel_category);
+        MaterialButton btnCreate = dialogView.findViewById(R.id.btn_create_category);
+
+        final String[] presetColors = {
+                "#4CAF50", "#2196F3", "#FF9800", "#9C27B0",
+                "#E91E63", "#00BCD4", "#FF5722", "#607D8B"
+        };
+        final String[] selectedColor = {presetColors[0]};
+
+        for (int i = 0; i < presetColors.length; i++) {
+            String hex = presetColors[i];
+            Chip colorChip = new Chip(requireContext());
+            colorChip.setCheckable(true);
+            colorChip.setText("   ");
+            colorChip.setChipBackgroundColor(ColorStateList.valueOf(Color.parseColor(hex)));
+            colorChip.setChipStrokeColor(ColorStateList.valueOf(Color.WHITE));
+            colorChip.setChipStrokeWidth(3f);
+            if (i == 0) {
+                colorChip.setChecked(true);
+            }
+            colorChip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    selectedColor[0] = hex;
+                }
+            });
+            colorGroup.addView(colorChip);
+        }
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        btnCreate.setOnClickListener(v -> {
+            String name = etName.getText() != null ? etName.getText().toString().trim() : "";
+            if (name.isEmpty()) {
+                etName.setError(getString(R.string.error_category_name_required));
+                return;
+            }
+            String type = typeToggle.getCheckedButtonId() == R.id.btn_dialog_type_income ? "INCOME" : "EXPENSE";
+            viewModel.addCategory(name, type, selectedColor[0], "custom");
+            dialog.dismiss();
+            Toast.makeText(requireContext(), "Đã tạo: " + name, Toast.LENGTH_SHORT).show();
+        });
+
+        dialog.show();
     }
 }

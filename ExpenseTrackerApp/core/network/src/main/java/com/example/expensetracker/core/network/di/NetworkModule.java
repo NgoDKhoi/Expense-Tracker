@@ -2,12 +2,14 @@ package com.example.expensetracker.core.network.di;
 
 import com.example.expensetracker.core.domain.repository.IAiChatRepository;
 import com.example.expensetracker.core.domain.repository.IAuthRepository;
+import com.example.expensetracker.core.domain.repository.ILeaderboardRepository;
 import com.example.expensetracker.core.domain.repository.ISyncRemote;
 import com.example.expensetracker.core.network.BuildConfig;
 import com.example.expensetracker.core.network.ai.GeminiApi;
 import com.example.expensetracker.core.network.ai.GeminiChatRepositoryImpl;
 import com.example.expensetracker.core.network.auth.AuthRepositoryImpl;
 import com.example.expensetracker.core.network.auth.SupabaseAuthApi;
+import com.example.expensetracker.core.network.sync.LeaderboardRepositoryImpl;
 import com.example.expensetracker.core.network.sync.SupabaseSyncApi;
 import com.example.expensetracker.core.network.sync.SupabaseSyncRemote;
 import com.google.gson.Gson;
@@ -36,6 +38,10 @@ public abstract class NetworkModule {
     @Binds
     @Singleton
     abstract IAiChatRepository bindAiChatRepository(GeminiChatRepositoryImpl impl);
+
+    @Binds
+    @Singleton
+    abstract ILeaderboardRepository bindLeaderboardRepository(LeaderboardRepositoryImpl impl);
 
     // Retrofit stays inside these methods so modules depending on :core:network don't need it on their classpath.
     @Provides

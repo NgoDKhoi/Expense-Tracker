@@ -11,7 +11,9 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,6 +37,9 @@ import com.example.expensetracker.ui.adapter.LeaderboardAdapter;
 import com.example.expensetracker.viewmodel.GamificationViewModel;
 import com.example.expensetracker.viewmodel.GamificationViewModel.Mood;
 import com.example.expensetracker.viewmodel.GamificationViewModel.PiggyUiState;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.text.NumberFormat;
@@ -185,22 +190,94 @@ public class AiAssistantFragment extends Fragment {
         double currentLimit = current != null ? current.dailyLimit : GamificationViewModel.DEFAULT_DAILY_BUDGET_LIMIT;
 
         int pad = Math.round(20 * requireContext().getResources().getDisplayMetrics().density);
-        FrameLayout container = new FrameLayout(requireContext());
-        container.setPadding(pad, pad / 2, pad, 0);
+        int gap = Math.round(10 * requireContext().getResources().getDisplayMetrics().density);
 
-        EditText input = new EditText(requireContext());
-        input.setInputType(InputType.TYPE_CLASS_NUMBER);
-        input.setHint(R.string.dialog_daily_limit_hint);
-        input.setText(String.valueOf(Math.round(currentLimit)));
-        input.setSelection(input.getText().length());
-        container.addView(input);
+        ScrollView scrollView = new ScrollView(requireContext());
+        LinearLayout layout = new LinearLayout(requireContext());
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(pad, gap, pad, 0);
+        scrollView.addView(layout);
+
+        EditText inputLimit = new EditText(requireContext());
+        inputLimit.setInputType(InputType.TYPE_CLASS_NUMBER);
+        inputLimit.setHint(R.string.dialog_daily_limit_hint);
+        inputLimit.setText(String.valueOf(Math.round(currentLimit)));
+        inputLimit.setSelection(inputLimit.getText().length());
+        layout.addView(inputLimit);
+
+        TextView tvWizardTitle = new TextView(requireContext());
+        tvWizardTitle.setText(R.string.piggy_wizard_section_title);
+        tvWizardTitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.expense_orange));
+        tvWizardTitle.setTextSize(14f);
+        tvWizardTitle.setPadding(0, gap * 2, 0, gap / 2);
+        layout.addView(tvWizardTitle);
+
+        EditText etIncome = new EditText(requireContext());
+        etIncome.setInputType(InputType.TYPE_CLASS_NUMBER);
+        etIncome.setHint(R.string.piggy_wizard_income_hint);
+        double monthIncome = viewModel.getCurrentMonthIncome();
+        if (monthIncome > 0) {
+            etIncome.setText(String.valueOf(Math.round(monthIncome)));
+        }
+        layout.addView(etIncome);
+
+        EditText etFixed = new EditText(requireContext());
+        etFixed.setInputType(InputType.TYPE_CLASS_NUMBER);
+        etFixed.setHint(R.string.piggy_wizard_fixed_hint);
+        layout.addView(etFixed);
+
+        final int[] selectedSavingPct = {20};
+        TextView tvSavingLabel = new TextView(requireContext());
+        tvSavingLabel.setText(getString(R.string.piggy_wizard_saving_label, selectedSavingPct[0]));
+        tvSavingLabel.setTextSize(13f);
+        tvSavingLabel.setPadding(0, gap, 0, gap / 2);
+        layout.addView(tvSavingLabel);
+
+        ChipGroup savingChips = new ChipGroup(requireContext());
+        savingChips.setSingleSelection(true);
+        savingChips.setSelectionRequired(true);
+        int[] pctOptions = {10, 20, 30};
+        for (int pct : pctOptions) {
+            Chip chip = new Chip(requireContext());
+            chip.setCheckable(true);
+            chip.setText(pct + "%");
+            if (pct == 20) {
+                chip.setChecked(true);
+            }
+            chip.setOnClickListener(v -> {
+                selectedSavingPct[0] = pct;
+                tvSavingLabel.setText(getString(R.string.piggy_wizard_saving_label, pct));
+            });
+            savingChips.addView(chip);
+        }
+        layout.addView(savingChips);
+
+        MaterialButton btnCalculate = new MaterialButton(requireContext());
+        btnCalculate.setText(R.string.piggy_wizard_calc_btn);
+        btnCalculate.setOnClickListener(v -> {
+            double income = parseDoubleOrZero(etIncome);
+            if (income <= 0) {
+                etIncome.setError(getString(R.string.msg_invalid_amount));
+                return;
+            }
+            double fixed = parseDoubleOrZero(etFixed);
+            double suggested = GamificationViewModel.suggestDailyBudget(income, fixed, selectedSavingPct[0]);
+            inputLimit.setText(String.valueOf(Math.round(suggested)));
+            inputLimit.setSelection(inputLimit.getText().length());
+            Toast.makeText(
+                    requireContext(),
+                    getString(R.string.piggy_wizard_suggested_msg, formatFullCurrency(suggested)),
+                    Toast.LENGTH_SHORT
+            ).show();
+        });
+        layout.addView(btnCalculate);
 
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.dialog_daily_limit_title)
-                .setView(container)
+                .setView(scrollView)
                 .setNegativeButton(R.string.action_cancel, null)
                 .setPositiveButton(android.R.string.ok, (dialog, which) -> {
-                    String raw = input.getText() != null ? input.getText().toString().trim() : "";
+                    String raw = inputLimit.getText() != null ? inputLimit.getText().toString().trim() : "";
                     try {
                         double parsed = Double.parseDouble(raw);
                         if (parsed > 0) {
@@ -213,6 +290,18 @@ public class AiAssistantFragment extends Fragment {
                     Toast.makeText(requireContext(), R.string.msg_invalid_amount, Toast.LENGTH_SHORT).show();
                 })
                 .show();
+    }
+
+    private static double parseDoubleOrZero(EditText editText) {
+        String raw = editText.getText() != null ? editText.getText().toString().trim() : "";
+        if (raw.isEmpty()) {
+            return 0.0;
+        }
+        try {
+            return Double.parseDouble(raw);
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
     }
 
     private void observeViewModel() {

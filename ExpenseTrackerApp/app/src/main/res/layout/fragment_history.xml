@@ -7,14 +7,35 @@
     android:background="@color/background_dark"
     android:padding="@dimen/spacing_m">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/title_history"
-        android:textSize="@dimen/text_size_headline"
-        android:textStyle="bold"
-        android:textColor="@color/text_primary"
-        android:layout_marginBottom="@dimen/spacing_m" />
+        android:layout_marginBottom="@dimen/spacing_m"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/title_history"
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/text_size_headline"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_export_csv"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="36dp"
+            android:paddingHorizontal="12dp"
+            android:text="@string/btn_export_csv"
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/text_size_caption"
+            app:cornerRadius="@dimen/radius_pill"
+            app:strokeColor="@color/surface_glass_stroke" />
+    </LinearLayout>
 
     <!-- Search Input Bar -->
     <LinearLayout
